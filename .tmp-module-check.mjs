@@ -1,504 +1,9 @@
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>启明数字人预览器</title>
-    <style>
-      :root {
-        --bg: #eef2f6;
-        --panel: rgba(255, 255, 255, 0.9);
-        --panel-strong: rgba(255, 255, 255, 0.96);
-        --border: rgba(27, 39, 51, 0.12);
-        --text: #16202a;
-        --muted: #627180;
-        --accent: #0f7b6c;
-        --accent-soft: rgba(15, 123, 108, 0.12);
-        --danger: #8f3843;
-        --shadow: 0 18px 40px rgba(31, 52, 79, 0.12);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-        color: var(--text);
-        background:
-          radial-gradient(circle at top left, rgba(15, 123, 108, 0.08), transparent 30%),
-          radial-gradient(circle at top right, rgba(41, 98, 255, 0.08), transparent 28%),
-          linear-gradient(180deg, #f8fbfd 0%, var(--bg) 100%);
-      }
-
-      body {
-        display: grid;
-        grid-template-columns: 390px 1fr;
-        gap: 16px;
-        padding: 16px;
-        height: 100vh;
-        overflow: hidden;
-        align-items: stretch;
-      }
-
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(14px);
-        min-height: 0;
-      }
-
-      .sidebar {
-        display: flex;
-        flex-direction: column;
-        height: calc(100vh - 32px);
-        min-height: 0;
-        overflow: hidden;
-      }
-
-      .sidebar-head {
-        padding: 18px 18px 14px;
-        border-bottom: 1px solid var(--border);
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.62));
-      }
-
-      h1 {
-        margin: 0 0 8px;
-        font-size: 24px;
-        line-height: 1.1;
-      }
-
-      .sub {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.6;
-      }
-
-      .search-wrap,
-      .test-form {
-        display: grid;
-        gap: 10px;
-        margin-top: 14px;
-      }
-
-      input,
-      select,
-      button,
-      textarea {
-        font: inherit;
-      }
-
-      input,
-      select,
-      textarea {
-        width: 100%;
-        padding: 11px 12px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.94);
-        color: var(--text);
-      }
-
-      textarea {
-        min-height: 96px;
-        resize: vertical;
-        line-height: 1.55;
-      }
-
-      .controls {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-      }
-
-      .toolbar {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-      }
-
-      .test-toolbar {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-      }
-
-      button {
-        border: 0;
-        border-radius: 12px;
-        padding: 10px 12px;
-        background: #12324e;
-        color: white;
-        cursor: pointer;
-        transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
-      }
-
-      button.secondary {
-        background: #e8eef3;
-        color: #16304a;
-      }
-
-      button.accent {
-        background: var(--accent);
-      }
-
-      button.danger {
-        background: var(--danger);
-      }
-
-      button:hover {
-        transform: translateY(-1px);
-      }
-
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.48;
-        transform: none;
-      }
-
-      .status {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        margin-top: 12px;
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: #89a3bb;
-      }
-
-      .dot.ok {
-        background: var(--accent);
-      }
-
-      .dot.bad {
-        background: var(--danger);
-      }
-
-      .helper-card {
-        margin: 14px 18px 0;
-        padding: 14px;
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.72);
-      }
-
-      .helper-title {
-        margin: 0 0 8px;
-        font-size: 14px;
-      }
-
-      .helper-text {
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.6;
-      }
-
-      .helper-grid {
-        display: grid;
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      .helper-label {
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .list-meta {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px 18px;
-        font-size: 12px;
-        color: var(--muted);
-        border-bottom: 1px solid var(--border);
-      }
-
-      .motion-list {
-        flex: 1;
-        min-height: 0;
-        overflow: auto;
-        padding: 10px;
-      }
-
-      .motion-item {
-        width: 100%;
-        border: 1px solid transparent;
-        background: transparent;
-        border-radius: 14px;
-        text-align: left;
-        padding: 12px;
-        margin-bottom: 8px;
-        color: var(--text);
-      }
-
-      .motion-item:hover {
-        background: rgba(18, 50, 78, 0.06);
-      }
-
-      .motion-item.active {
-        background: var(--accent-soft);
-        border-color: rgba(15, 123, 108, 0.24);
-      }
-
-      .motion-title {
-        font-size: 14px;
-        line-height: 1.35;
-        word-break: break-word;
-      }
-
-      .motion-sub {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        margin-top: 6px;
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .viewer {
-        position: relative;
-        height: calc(100vh - 32px);
-        min-height: 0;
-        overflow: hidden;
-      }
-
-      #canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-
-      .overlay {
-        position: absolute;
-        left: 16px;
-        top: 16px;
-        right: 16px;
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        pointer-events: none;
-      }
-
-      .overlay-card {
-        pointer-events: auto;
-        max-width: min(540px, calc(100% - 32px));
-        padding: 16px 18px;
-        background: var(--panel-strong);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        box-shadow: var(--shadow);
-      }
-
-      .overlay-title {
-        margin: 0 0 6px;
-        font-size: 18px;
-      }
-
-      .overlay-text {
-        font-size: 13px;
-        line-height: 1.55;
-        color: var(--muted);
-      }
-
-      .speech-panel {
-        position: absolute;
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
-        display: grid;
-        gap: 8px;
-        padding: 14px 16px;
-        border-radius: 16px;
-        background: rgba(16, 23, 31, 0.74);
-        color: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(8px);
-      }
-
-      .speech-line {
-        font-size: 13px;
-        line-height: 1.6;
-      }
-
-      .speech-meta {
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.72);
-      }
-
-      .hidden {
-        display: none !important;
-      }
-
-      @media (max-width: 1080px) {
-        body {
-          grid-template-columns: 1fr;
-          height: auto;
-          overflow: auto;
-        }
-
-        .sidebar,
-        .viewer {
-          height: auto;
-          min-height: auto;
-        }
-
-        .sidebar {
-          max-height: 65vh;
-        }
-
-        .viewer {
-          min-height: 68vh;
-        }
-
-        .overlay {
-          flex-direction: column;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <aside class="panel sidebar">
-      <div class="sidebar-head">
-        <h1>启明数字人预览器</h1>
-        <div class="sub">
-          这个页面只用于测试当前 <code>preview</code> 项目里的 VRM 模型、FBX 动作、表情和纯前端口型。
-          你可以先选动作和心情，再输入一句话，点击发送后观察人物是否按字序摆口型。
-        </div>
-
-        <div class="search-wrap">
-          <input id="searchInput" type="search" placeholder="搜索动作名，比如 walk / idle / point" />
-          <div class="controls">
-            <select id="groupSelect">
-              <option value="all">全部分组</option>
-            </select>
-            <select id="speedSelect">
-              <option value="0.5">0.5x 速度</option>
-              <option value="0.75">0.75x 速度</option>
-              <option value="1" selected>1.0x 速度</option>
-              <option value="1.25">1.25x 速度</option>
-              <option value="1.5">1.5x 速度</option>
-            </select>
-          </div>
-          <div class="toolbar">
-            <button id="prevBtn" class="secondary" type="button">上一条</button>
-            <button id="nextBtn" class="secondary" type="button">下一条</button>
-            <button id="playPauseBtn" class="accent" type="button">暂停</button>
-            <button id="loopBtn" type="button">循环开</button>
-          </div>
-        </div>
-
-        <div class="status">
-          <span id="statusDot" class="dot"></span>
-          <span id="statusText">准备中</span>
-        </div>
-      </div>
-
-      <div class="helper-card">
-        <h2 class="helper-title">前瞻测试面板</h2>
-        <div class="helper-text">
-          这里不依赖后端口型，只在前端根据你输入的文字按顺序驱动嘴型。
-          动作和心情也只做演示，方便你验证启明智教未来返回 <code>action</code> 和 <code>mood</code> 字段时的效果。
-        </div>
-
-        <div class="helper-grid test-form">
-          <div>
-            <div class="helper-label">当前测试动作</div>
-            <select id="actionSelect">
-              <option value="">跟随左侧当前动作</option>
-            </select>
-          </div>
-
-          <div>
-            <div class="helper-label">当前测试表情</div>
-            <select id="moodSelect">
-              <option value="neutral">neutral / 中性</option>
-              <option value="happy">happy / 开心</option>
-              <option value="relaxed">relaxed / 放松</option>
-              <option value="sad">sad / 难过</option>
-              <option value="angry">angry / 生气</option>
-              <option value="surprised">surprised / 惊讶</option>
-            </select>
-          </div>
-
-          <div>
-            <div class="helper-label">测试文本</div>
-            <textarea id="speechInput" placeholder="例如：同学们好，今天我们开始上课。这个版本只测试纯前端按字顺序摆口型。">同学们好，今天我们开始上课。这是一个纯前端测试口型的预览版本。</textarea>
-          </div>
-
-          <div class="test-toolbar">
-            <button id="speakBtn" class="accent" type="button">发送并说话</button>
-            <button id="stopSpeakBtn" class="danger" type="button">停止说话</button>
-          </div>
-
-          <div class="test-toolbar">
-            <button id="applyMoodBtn" class="secondary" type="button">只应用表情</button>
-            <button id="resetFaceBtn" class="secondary" type="button">重置表情口型</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="list-meta">
-        <span id="countText">0 个动作</span>
-        <span id="selectionText">未选中</span>
-      </div>
-
-      <div id="motionList" class="motion-list"></div>
-    </aside>
-
-    <main class="panel viewer">
-      <canvas id="canvas"></canvas>
-
-      <div class="overlay">
-        <div class="overlay-card">
-          <h2 id="currentTitle" class="overlay-title">加载中...</h2>
-          <div id="currentMeta" class="overlay-text">正在读取动作列表和 VRM 模型。</div>
-        </div>
-
-        <div class="overlay-card">
-          <div class="overlay-text">
-            快捷键：
-            左右方向键切换动作；
-            空格暂停或继续；
-            <code>L</code> 切换循环。
-          </div>
-        </div>
-      </div>
-
-      <div id="speechPanel" class="speech-panel hidden">
-        <div id="speechText" class="speech-line"></div>
-        <div id="speechMeta" class="speech-meta"></div>
-      </div>
-    </main>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "/node_modules/three/build/three.module.js",
-          "three/addons/": "/node_modules/three/examples/jsm/",
-          "@pixiv/three-vrm": "/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js",
-          "pinyin-pro": "/node_modules/pinyin-pro/dist/index.mjs"
-        }
-      }
-    </script>
-
-    <script type="module">
+﻿
       import * as THREE from 'three';
       import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
       import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
       import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-      import { pinyin } from 'pinyin-pro';
 
       const MIXAMO_VRM_BONE_MAP = {
         Hips: 'hips',
@@ -564,15 +69,6 @@
         { key: 'surprised', aliases: ['surprised'] },
       ];
 
-      const LETTER_TO_MOUTH = {
-        a: 'aa',
-        o: 'oh',
-        e: 'ee',
-        i: 'ih',
-        u: 'ou',
-        v: 'ee',
-      };
-
       const PUNCTUATION_PAUSE = {
         '\uFF0C': 160,
         ',': 160,
@@ -586,24 +82,6 @@
         ';': 220,
         '\uFF1A': 180,
         ':': 180,
-      };
-
-      const MOOD_SPEECH_STYLE = {
-        neutral: { mouthScale: 0.82, durationScale: 1, releaseScale: 1 },
-        happy: { mouthScale: 0.9, durationScale: 0.92, releaseScale: 0.88 },
-        relaxed: { mouthScale: 0.72, durationScale: 1.08, releaseScale: 1.12 },
-        sad: { mouthScale: 0.62, durationScale: 1.12, releaseScale: 1.15 },
-        angry: { mouthScale: 0.95, durationScale: 0.86, releaseScale: 0.82 },
-        surprised: { mouthScale: 1.0, durationScale: 0.9, releaseScale: 0.9 },
-      };
-
-      const MOOD_MOTION_STYLE = {
-        neutral: { nodAmp: 0.018, swayAmp: 0.012, blinkChance: 0.004 },
-        happy: { nodAmp: 0.026, swayAmp: 0.016, blinkChance: 0.006 },
-        relaxed: { nodAmp: 0.014, swayAmp: 0.01, blinkChance: 0.007 },
-        sad: { nodAmp: 0.01, swayAmp: 0.006, blinkChance: 0.005 },
-        angry: { nodAmp: 0.022, swayAmp: 0.008, blinkChance: 0.003 },
-        surprised: { nodAmp: 0.02, swayAmp: 0.014, blinkChance: 0.0025 },
       };
 
       const clock = new THREE.Clock();
@@ -717,100 +195,11 @@
         lipSyncTimeout: 0,
         lipSyncToken: 0,
         activeMood: 'neutral',
-        isSpeaking: false,
-        blinkTimer: 0,
-        blinkActive: false,
-        blinkProgress: 0,
-        headBone: null,
-        neckBone: null,
-        speakingMotionTime: 0,
-        synth: null,
-        voices: [],
-        selectedVoiceName: '',
       };
 
       function setStatus(kind, text) {
         statusText.textContent = text;
         statusDot.className = `dot ${kind}`;
-      }
-
-      function getMotionStyleByMood(moodKey = 'neutral') {
-        return MOOD_MOTION_STYLE[moodKey] || MOOD_MOTION_STYLE.neutral;
-      }
-
-      function detectSpeechSynthesis() {
-        if (!('speechSynthesis' in window)) return null;
-        return window.speechSynthesis;
-      }
-
-      function pickPreferredVoice(voices) {
-        if (!voices?.length) return null;
-
-        const zhVoices = voices.filter((voice) => /zh|chinese|mandarin|yue|cn/i.test(`${voice.lang} ${voice.name}`));
-        const femaleZhVoice =
-          zhVoices.find((voice) => /female|xiaoxiao|xiaoyi|xiaomei|tingting|huihui|jiaojiao|yaoyao|hanna/i.test(voice.name)) ||
-          zhVoices.find((voice) => /zh-CN|cmn/i.test(voice.lang)) ||
-          zhVoices[0];
-
-        return femaleZhVoice || voices[0] || null;
-      }
-
-      function initVoices() {
-        state.synth = detectSpeechSynthesis();
-        if (!state.synth) return;
-
-        const updateVoices = () => {
-          state.voices = state.synth.getVoices() || [];
-          const preferred = pickPreferredVoice(state.voices);
-          state.selectedVoiceName = preferred?.name || '';
-        };
-
-        updateVoices();
-        if ('onvoiceschanged' in state.synth) {
-          state.synth.onvoiceschanged = updateVoices;
-        }
-      }
-
-      function speakWithBrowserVoice(text) {
-        if (!state.synth || !text?.trim()) return false;
-
-        try {
-          state.synth.cancel();
-
-          const utterance = new SpeechSynthesisUtterance(text);
-          const preferred = pickPreferredVoice(state.voices);
-
-          if (preferred) {
-            utterance.voice = preferred;
-            utterance.lang = preferred.lang || 'zh-CN';
-          } else {
-            utterance.lang = 'zh-CN';
-          }
-
-          const mood = state.activeMood || 'neutral';
-          utterance.rate = mood === 'angry' ? 1.06 : mood === 'sad' ? 0.9 : mood === 'relaxed' ? 0.94 : 1;
-          utterance.pitch = mood === 'happy' ? 1.14 : mood === 'surprised' ? 1.2 : mood === 'sad' ? 0.95 : 1.05;
-          utterance.volume = 1;
-
-          utterance.onstart = () => {
-            speechMeta.textContent = `??????? ? ????????${preferred ? ` ? ${preferred.name}` : ''}`;
-          };
-
-          utterance.onerror = () => {
-            speechMeta.textContent = '??????? ? ???????????????????';
-          };
-
-          utterance.onend = () => {
-            if (!state.isSpeaking) {
-              speechMeta.textContent = `??????? ? ???${preferred ? ` ? ${preferred.name}` : ''}`;
-            }
-          };
-
-          state.synth.speak(utterance);
-          return true;
-        } catch (_error) {
-          return false;
-        }
       }
 
       function resizeRenderer() {
@@ -1036,7 +425,7 @@
         }
 
         if (!tracks.length) {
-          throw new Error('没有成功映射到 VRM humanoid 骨骼，这条 FBX 可能不是标准 humanoid 动作。');
+          throw new Error('娌℃湁鎴愬姛鏄犲皠鍒?VRM humanoid 楠ㄩ锛岃繖鏉?FBX 鍙兘涓嶆槸鏍囧噯 humanoid 鍔ㄤ綔銆?);
         }
 
         const remappedClip = new THREE.AnimationClip(`${clip.name || 'motion'}_vrm`, clip.duration, tracks);
@@ -1046,27 +435,21 @@
       function buildExpressionMaps(vrm) {
         const manager = vrm?.expressionManager;
         const expressionMap = manager?.expressionMap || {};
-        const hasExpression = (name) => Boolean(expressionMap[name]);
         const mouthMap = {
-          aa: hasExpression('aa') ? 'aa' : hasExpression('a') ? 'a' : null,
-          ih: hasExpression('ih') ? 'ih' : hasExpression('i') ? 'i' : null,
-          ou: hasExpression('ou') ? 'ou' : hasExpression('u') ? 'u' : null,
-          ee: hasExpression('ee') ? 'ee' : hasExpression('e') ? 'e' : null,
-          oh: hasExpression('oh') ? 'oh' : hasExpression('o') ? 'o' : null,
+          aa: expressionMap.aa || expressionMap.a || null,
+          ih: expressionMap.ih || expressionMap.i || null,
+          ou: expressionMap.ou || expressionMap.u || null,
+          ee: expressionMap.ee || expressionMap.e || null,
+          oh: expressionMap.oh || expressionMap.o || null,
         };
 
         const emotionMap = {};
         for (const preset of EMOTION_PRESETS) {
-          const found = preset.aliases.find((alias) => hasExpression(alias));
+          const found = preset.aliases.find((alias) => expressionMap[alias]);
           emotionMap[preset.key] = found || null;
         }
 
         return { expressionMap, mouthMap, emotionMap };
-      }
-
-      function cacheSpeechBones(vrm) {
-        state.headBone = findVRMBone(vrm, 'head');
-        state.neckBone = findVRMBone(vrm, 'neck');
       }
 
       function clearAllExpressions() {
@@ -1074,12 +457,6 @@
         if (!manager) return;
         manager.resetValues();
         manager.update();
-      }
-
-      function getAvailableMouthSummary() {
-        return ['aa', 'ih', 'ou', 'ee', 'oh']
-          .map((key) => `${key}:${state.mouthMap[key] || '-'}`)
-          .join(' | ');
       }
 
       function applyMood(moodKey = 'neutral', strength = 0.8) {
@@ -1113,30 +490,6 @@
         setMouthWeights({ aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 });
       }
 
-      function resetSpeechMotion() {
-        state.isSpeaking = false;
-        state.blinkTimer = 0;
-        state.blinkActive = false;
-        state.blinkProgress = 0;
-        state.speakingMotionTime = 0;
-
-        if (state.headBone) {
-          state.headBone.rotation.x = 0;
-          state.headBone.rotation.y = 0;
-          state.headBone.rotation.z = 0;
-        }
-
-        if (state.neckBone) {
-          state.neckBone.rotation.x = 0;
-          state.neckBone.rotation.y = 0;
-          state.neckBone.rotation.z = 0;
-        }
-      }
-
-      function getSpeechStyleByMood(moodKey = 'neutral') {
-        return MOOD_SPEECH_STYLE[moodKey] || MOOD_SPEECH_STYLE.neutral;
-      }
-
       function stopSpeaking(options = {}) {
         state.lipSyncToken += 1;
         if (state.lipSyncHandle) {
@@ -1149,10 +502,6 @@
         }
         resetMouth();
         applyMood(state.activeMood || 'neutral');
-        resetSpeechMotion();
-        if (state.synth) {
-          state.synth.cancel();
-        }
 
         if (!options.keepPanel) {
           speechPanel.classList.add('hidden');
@@ -1161,111 +510,47 @@
         }
       }
 
-      function resolveFallbackMouthKeyFromChar(char) {
+      function resolveMouthKeyFromChar(char) {
         if (!char) return null;
+        if (/\s/.test(char)) return null;
+        if (PUNCTUATION_PAUSE[char]) return null;
+
         const code = char.codePointAt(0) || 0;
-        return ['aa', 'ih', 'ou', 'ee', 'oh'][code % 5];
-      }
-
-      function normalizePinyinSyllable(raw) {
-        return String(raw || '')
-          .toLowerCase()
-          .replace(/[^a-züv]/g, '')
-          .replace(/ü/g, 'v');
-      }
-
-      function pinyinToMouthSequence(py) {
-        const syllable = normalizePinyinSyllable(py);
-        if (!syllable) return [];
-
-        const specials = [
-          ['iang', ['ih', 'aa']],
-          ['iong', ['ih', 'oh']],
-          ['uang', ['ou', 'aa']],
-          ['ueng', ['ou', 'ee']],
-          ['iao', ['ih', 'aa', 'oh']],
-          ['ian', ['ih', 'ee']],
-          ['ing', ['ih', 'ee']],
-          ['ong', ['oh', 'ou']],
-          ['ang', ['aa']],
-          ['eng', ['ee']],
-          ['uan', ['ou', 'aa']],
-          ['uai', ['ou', 'aa', 'ih']],
-          ['iao', ['ih', 'aa', 'oh']],
-          ['ai', ['aa', 'ih']],
-          ['ei', ['ee', 'ih']],
-          ['ao', ['aa', 'oh']],
-          ['ou', ['oh', 'ou']],
-          ['ia', ['ih', 'aa']],
-          ['ie', ['ih', 'ee']],
-          ['iu', ['ih', 'ou']],
-          ['io', ['ih', 'oh']],
-          ['ua', ['ou', 'aa']],
-          ['uo', ['oh', 'ou']],
-          ['ui', ['ou', 'ih']],
-          ['ve', ['ee']],
-          ['an', ['aa']],
-          ['en', ['ee']],
-          ['in', ['ih']],
-          ['un', ['ou']],
-          ['er', ['ee']],
-        ];
-
-        for (const [ending, sequence] of specials) {
-          if (syllable.endsWith(ending)) return sequence;
+        if (char >= 'a' && char <= 'z') {
+          if ('a'.includes(char)) return 'aa';
+          if ('i'.includes(char)) return 'ih';
+          if ('u'.includes(char)) return 'ou';
+          if ('e'.includes(char)) return 'ee';
+          if ('o'.includes(char)) return 'oh';
         }
 
-        const fallback = [];
-        for (const ch of syllable) {
-          if (LETTER_TO_MOUTH[ch]) fallback.push(LETTER_TO_MOUTH[ch]);
-        }
-        return fallback.length ? fallback : ['aa'];
+        const mapIndex = code % 5;
+        return ['aa', 'ih', 'ou', 'ee', 'oh'][mapIndex];
       }
 
       function buildSpeechPlan(text) {
         const plan = [];
-        const style = getSpeechStyleByMood(state.activeMood || 'neutral');
         for (const char of text) {
           if (PUNCTUATION_PAUSE[char]) {
-            const pauseDuration = Math.round(PUNCTUATION_PAUSE[char] * style.durationScale);
             plan.push({
               char,
-              mouths: [],
-              duration: pauseDuration,
-              label: 'pause',
-              ending: char,
+              mouth: null,
+              duration: PUNCTUATION_PAUSE[char],
             });
             continue;
           }
           if (!char.trim()) {
             plan.push({
               char,
-              mouths: [],
-              duration: Math.round(90 * style.durationScale),
-              label: 'space',
-              ending: '',
+              mouth: null,
+              duration: 90,
             });
             continue;
           }
-
-          let py = '';
-          try {
-            py = pinyin(char, { toneType: 'none', type: 'array' })?.[0] || '';
-          } catch (_error) {
-            py = '';
-          }
-
-          const sequence = py ? pinyinToMouthSequence(py) : [resolveFallbackMouthKeyFromChar(char)];
-          const cleanSequence = sequence.filter(Boolean);
-          const totalDuration = Math.round((130 + Math.floor(Math.random() * 35)) * style.durationScale);
-
           plan.push({
             char,
-            pinyin: py,
-            mouths: cleanSequence,
-            duration: totalDuration,
-            label: cleanSequence.join(' -> ') || 'fallback',
-            ending: '',
+            mouth: resolveMouthKeyFromChar(char),
+            duration: 145,
           });
         }
         return plan;
@@ -1273,7 +558,6 @@
 
       function animateMouthTo(targetKey, duration = 90, token) {
         const start = performance.now();
-        const style = getSpeechStyleByMood(state.activeMood || 'neutral');
         const initial = {
           aa: 0,
           ih: 0,
@@ -1299,8 +583,7 @@
         };
 
         if (targetKey && target[targetKey] !== undefined) {
-          const jitter = 0.92 + Math.random() * 0.14;
-          target[targetKey] = Math.min(1, style.mouthScale * jitter);
+          target[targetKey] = 0.82;
         }
 
         return new Promise((resolve) => {
@@ -1336,28 +619,19 @@
         state.lipSyncToken += 1;
         const token = state.lipSyncToken;
         const plan = buildSpeechPlan(trimmed);
-        state.isSpeaking = true;
-        state.speakingMotionTime = 0;
 
         speechText.textContent = trimmed;
-        speechMeta.textContent = `纯前端口型测试 · 共 ${plan.length} 个字/停顿单元`;
+        speechMeta.textContent = `绾墠绔彛鍨嬫祴璇?路 鍏?${plan.length} 涓瓧/鍋滈】鍗曞厓`;
         speechPanel.classList.remove('hidden');
-        speakWithBrowserVoice(trimmed);
 
         for (let i = 0; i < plan.length; i += 1) {
           if (token !== state.lipSyncToken) return;
           const item = plan[i];
-          const currentLabel = item.mouths.length
-            ? `第 ${i + 1} 步：${item.char}${item.pinyin ? `(${item.pinyin})` : ''} -> ${item.label}`
-            : `第 ${i + 1} 步：${item.char} -> 停顿`;
-          speechMeta.textContent = `纯前端口型测试 · ${currentLabel}`;
+          const currentLabel = item.mouth ? `绗?${i + 1} 姝ワ細${item.char} -> ${item.mouth}` : `绗?${i + 1} 姝ワ細${item.char} -> 鍋滈】`;
+          speechMeta.textContent = `绾墠绔彛鍨嬫祴璇?路 ${currentLabel}`;
 
-          if (item.mouths.length) {
-            const segmentDuration = Math.max(50, Math.floor(item.duration / item.mouths.length));
-            for (const mouth of item.mouths) {
-              await animateMouthTo(mouth, segmentDuration, token);
-              if (token !== state.lipSyncToken) return;
-            }
+          if (item.mouth) {
+            await animateMouthTo(item.mouth, 70, token);
           } else {
             await animateMouthTo(null, 60, token);
           }
@@ -1368,100 +642,13 @@
             state.lipSyncTimeout = window.setTimeout(() => {
               state.lipSyncTimeout = 0;
               resolve();
-            }, item.mouths.length ? Math.max(24, Math.floor(item.duration * 0.32)) : item.duration);
+            }, item.duration);
           });
         }
 
         if (token !== state.lipSyncToken) return;
-        const style = getSpeechStyleByMood(state.activeMood || 'neutral');
-        const lastItem = plan[plan.length - 1];
-        let releaseDuration = Math.round(110 * style.releaseScale);
-        if (lastItem?.ending === '\uFF1F' || lastItem?.ending === '?') {
-          releaseDuration = Math.round(140 * style.releaseScale);
-        } else if (lastItem?.ending === '\uFF01' || lastItem?.ending === '!') {
-          releaseDuration = Math.round(125 * style.releaseScale);
-        } else if (lastItem?.ending === '\u3002' || lastItem?.ending === '.') {
-          releaseDuration = Math.round(150 * style.releaseScale);
-        }
-
-        await animateMouthTo(null, releaseDuration, token);
-        state.isSpeaking = false;
-        speechMeta.textContent = '纯前端口型测试 · 已完成';
-      }
-
-      function updateSpeechMotion(delta) {
-        if (!state.vrm) return;
-        const manager = state.vrm.expressionManager;
-        if (!manager) return;
-
-        if (state.isSpeaking) {
-          state.speakingMotionTime += delta;
-          const style = getMotionStyleByMood(state.activeMood || 'neutral');
-
-          if (state.headBone) {
-            state.headBone.rotation.x = Math.sin(state.speakingMotionTime * 5.6) * style.nodAmp;
-            state.headBone.rotation.y = Math.sin(state.speakingMotionTime * 2.7) * style.swayAmp;
-            state.headBone.rotation.z = Math.sin(state.speakingMotionTime * 3.1) * (style.swayAmp * 0.25);
-          }
-
-          if (state.neckBone) {
-            state.neckBone.rotation.x = Math.sin(state.speakingMotionTime * 4.2) * (style.nodAmp * 0.35);
-            state.neckBone.rotation.y = Math.sin(state.speakingMotionTime * 2.2) * (style.swayAmp * 0.4);
-          }
-
-          state.blinkTimer += delta;
-          if (!state.blinkActive && state.blinkTimer > 0.9) {
-            const chanceBase = style.blinkChance;
-            const chance = chanceBase + Math.min(0.01, state.blinkTimer * 0.0008);
-            if (Math.random() < chance) {
-              state.blinkActive = true;
-              state.blinkProgress = 0;
-              state.blinkTimer = 0;
-            }
-          }
-        } else {
-          if (state.headBone) {
-            state.headBone.rotation.x *= 0.85;
-            state.headBone.rotation.y *= 0.85;
-            state.headBone.rotation.z *= 0.85;
-          }
-          if (state.neckBone) {
-            state.neckBone.rotation.x *= 0.85;
-            state.neckBone.rotation.y *= 0.85;
-            state.neckBone.rotation.z *= 0.85;
-          }
-        }
-
-        if (state.blinkActive) {
-          state.blinkProgress += delta / 0.16;
-          const t = state.blinkProgress;
-          const blinkWeight = t < 0.5 ? t * 2 : (1 - t) * 2;
-          const blinkName =
-            state.expressionMap.blink ||
-            state.expressionMap.blinkLeft ||
-            state.expressionMap.blinkRight ||
-            null;
-
-          if (blinkName) {
-            const value = Math.max(0, Math.min(1, blinkWeight));
-            manager.setValue(blinkName.expressionName || blinkName, value);
-            manager.update();
-          }
-
-          if (t >= 1) {
-            const blinkKey = state.expressionMap.blink ? 'blink' : null;
-            if (blinkKey) {
-              manager.setValue('blink', 0);
-              manager.update();
-            } else {
-              if (state.expressionMap.blinkLeft) manager.setValue('blinkLeft', 0);
-              if (state.expressionMap.blinkRight) manager.setValue('blinkRight', 0);
-              manager.update();
-            }
-            state.blinkActive = false;
-            state.blinkProgress = 0;
-          }
-        }
+        await animateMouthTo(null, 110, token);
+        speechMeta.textContent = '绾墠绔彛鍨嬫祴璇?路 宸插畬鎴?;
       }
 
       async function loadVRM(vrmUrl) {
@@ -1502,17 +689,17 @@
         const current = state.filteredList[state.currentIndex];
         selectionText.textContent = current
           ? `${state.currentIndex + 1} / ${state.filteredList.length}`
-          : '未选中';
+          : '鏈€変腑';
       }
 
       function updateLoopButton() {
-        loopBtn.textContent = state.loop ? '循环开' : '循环关';
+        loopBtn.textContent = state.loop ? '寰幆寮€' : '寰幆鍏?;
         loopBtn.classList.toggle('accent', state.loop);
         loopBtn.classList.toggle('secondary', !state.loop);
       }
 
       function updatePlayPauseButton() {
-        playPauseBtn.textContent = state.paused ? '继续' : '暂停';
+        playPauseBtn.textContent = state.paused ? '缁х画' : '鏆傚仠';
       }
 
       function applyPlaybackState() {
@@ -1539,7 +726,7 @@
           button.innerHTML = `
             <div class="motion-title">${motion.name}</div>
             <div class="motion-sub">
-              <span>分组 ${motion.group}</span>
+              <span>鍒嗙粍 ${motion.group}</span>
               <span>${motion.fileName}</span>
             </div>
           `;
@@ -1547,7 +734,7 @@
           motionListEl.appendChild(button);
         }
 
-        countText.textContent = `${state.filteredList.length} / ${state.motionList.length} 个动作`;
+        countText.textContent = `${state.filteredList.length} / ${state.motionList.length} 涓姩浣渀;
         updateSelectionMeta();
       }
 
@@ -1577,15 +764,15 @@
         renderMotionList();
 
         const motion = state.filteredList[index];
-        setStatus('', `正在加载动作: ${motion.fileName}`);
+        setStatus('', `姝ｅ湪鍔犺浇鍔ㄤ綔: ${motion.fileName}`);
         currentTitle.textContent = motion.name;
-        currentMeta.textContent = `分组 ${motion.group} · ${motion.fileName}`;
+        currentMeta.textContent = `鍒嗙粍 ${motion.group} 路 ${motion.fileName}`;
 
         try {
           const fbx = await loadFBX(motion.path);
           const clip = fbx.animations?.[0];
           if (!clip) {
-            throw new Error('这个 FBX 里没有动画轨道。');
+            throw new Error('杩欎釜 FBX 閲屾病鏈夊姩鐢昏建閬撱€?);
           }
 
           stopCurrentAction();
@@ -1603,14 +790,14 @@
           applyPlaybackState();
           action.play();
 
-          setStatus('ok', `当前动作: ${motion.fileName}`);
+          setStatus('ok', `褰撳墠鍔ㄤ綔: ${motion.fileName}`);
           currentTitle.textContent = motion.name;
-          currentMeta.textContent = `分组 ${motion.group} · 时长 ${clip.duration.toFixed(2)}s · ${motion.fileName}`;
+          currentMeta.textContent = `鍒嗙粍 ${motion.group} 路 鏃堕暱 ${clip.duration.toFixed(2)}s 路 ${motion.fileName}`;
         } catch (error) {
           console.error(error);
-          setStatus('bad', `动作加载失败: ${motion.fileName}`);
+          setStatus('bad', `鍔ㄤ綔鍔犺浇澶辫触: ${motion.fileName}`);
           currentTitle.textContent = motion.name;
-          currentMeta.textContent = `分组 ${motion.group} · ${motion.fileName}`;
+          currentMeta.textContent = `鍒嗙粍 ${motion.group} 路 ${motion.fileName}`;
           speechMeta.textContent = error?.message || String(error);
           speechPanel.classList.remove('hidden');
         }
@@ -1647,18 +834,18 @@
       }
 
       function populateActionSelect() {
-        actionSelect.innerHTML = '<option value="">跟随左侧当前动作</option>';
+        actionSelect.innerHTML = '<option value="">璺熼殢宸︿晶褰撳墠鍔ㄤ綔</option>';
         for (const motion of state.motionList) {
           const option = document.createElement('option');
           option.value = motion.path;
-          option.textContent = `组 ${motion.group} · ${motion.fileName}`;
+          option.textContent = `缁?${motion.group} 路 ${motion.fileName}`;
           actionSelect.appendChild(option);
         }
       }
 
       async function init() {
         resizeRenderer();
-        setStatus('', '正在读取动作列表');
+        setStatus('', '姝ｅ湪璇诲彇鍔ㄤ綔鍒楄〃');
 
         const response = await fetch('/api/motions');
         const payload = await response.json();
@@ -1669,14 +856,14 @@
         for (const group of groups) {
           const option = document.createElement('option');
           option.value = group;
-          option.textContent = `分组 ${group}`;
+          option.textContent = `鍒嗙粍 ${group}`;
           groupSelect.appendChild(option);
         }
 
         populateActionSelect();
         filterMotions();
 
-        setStatus('', '正在加载 VRM 模型');
+        setStatus('', '姝ｅ湪鍔犺浇 VRM 妯″瀷');
         const loadedAvatar = await loadVRM(state.vrmUrl);
         state.vrm = loadedAvatar.vrm;
         state.avatarRoot = loadedAvatar.avatarRoot;
@@ -1685,17 +872,12 @@
         state.expressionMap = maps.expressionMap;
         state.mouthMap = maps.mouthMap;
         state.emotionMap = maps.emotionMap;
-        cacheSpeechBones(state.vrm);
-        initVoices();
         clearAllExpressions();
         applyMood('neutral');
 
-        currentTitle.textContent = 'VRM 已加载';
-        currentMeta.textContent = `动作总数 ${state.motionList.length}，可以直接测试动作、表情和前端口型。`;
-        setStatus('ok', `VRM 已加载，共 ${state.motionList.length} 个动作`);
-        speechText.textContent = '';
-        speechMeta.textContent = `已识别口型通道：${getAvailableMouthSummary()}${state.selectedVoiceName ? ` · 语音：${state.selectedVoiceName}` : ' · 语音：浏览器未就绪或不可用'}`;
-        speechPanel.classList.remove('hidden');
+        currentTitle.textContent = 'VRM 宸插姞杞?;
+        currentMeta.textContent = `鍔ㄤ綔鎬绘暟 ${state.motionList.length}锛屽彲浠ョ洿鎺ユ祴璇曞姩浣溿€佽〃鎯呭拰鍓嶇鍙ｅ瀷銆俙;
+        setStatus('ok', `VRM 宸插姞杞斤紝鍏?${state.motionList.length} 涓姩浣渀);
 
         if (state.filteredList.length) {
           await playMotionByIndex(0);
@@ -1723,7 +905,7 @@
         stopSpeaking();
         applyMood(moodSelect.value);
         speechText.textContent = '';
-        speechMeta.textContent = `当前表情：${moodSelect.value}`;
+        speechMeta.textContent = `褰撳墠琛ㄦ儏锛?{moodSelect.value}`;
         speechPanel.classList.remove('hidden');
       });
 
@@ -1744,7 +926,7 @@
 
         if (!text.trim()) {
           speechText.textContent = '';
-          speechMeta.textContent = '请输入测试文本。';
+          speechMeta.textContent = '璇疯緭鍏ユ祴璇曟枃鏈€?;
           speechPanel.classList.remove('hidden');
           return;
         }
@@ -1790,20 +972,17 @@
         const delta = clock.getDelta();
         controls.update();
         state.mixer?.update(delta);
-        updateSpeechMotion(delta);
         state.vrm?.update(delta);
         renderer.render(scene, camera);
       });
 
       init().catch((error) => {
         console.error(error);
-        currentTitle.textContent = '加载失败';
+        currentTitle.textContent = '鍔犺浇澶辫触';
         currentMeta.textContent = error?.message || String(error);
-        setStatus('bad', '初始化失败');
+        setStatus('bad', '鍒濆鍖栧け璐?);
         speechText.textContent = '';
         speechMeta.textContent = error?.stack || error?.message || String(error);
         speechPanel.classList.remove('hidden');
       });
-    </script>
-  </body>
-</html>
+    
