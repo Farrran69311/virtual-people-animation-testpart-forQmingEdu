@@ -7,6 +7,7 @@ const ROOT = __dirname;
 const PORT = Number(process.env.PORT || 4173);
 const VRM_FILE = 'QmingVirtualPeopleTestVersion1.0.vrm';
 const MOTION_DIRS = ['1', '2', '3', '4'];
+const BACKGROUND_DIR = 'background';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -57,6 +58,27 @@ function buildMotionList() {
 }
 
 const motionList = buildMotionList();
+
+function buildBackgroundList() {
+  const dirPath = path.join(ROOT, BACKGROUND_DIR);
+  if (!fs.existsSync(dirPath)) return [];
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  const items = entries
+    .filter((entry) => entry.isFile())
+    .filter((entry) => ['.glb', '.gltf'].includes(path.extname(entry.name).toLowerCase()))
+    .map((entry) => {
+      const relativePath = `${BACKGROUND_DIR}/${entry.name}`;
+      return {
+        name: entry.name.replace(/\.(glb|gltf)$/i, ''),
+        fileName: entry.name,
+        path: `/${encodeURI(relativePath).replace(/#/g, '%23')}`,
+      };
+    });
+
+  items.sort((a, b) => a.fileName.localeCompare(b.fileName, 'zh-CN', { numeric: true, sensitivity: 'base' }));
+  return items;
+}
 
 function sendJson(res, statusCode, data) {
   const body = JSON.stringify(data, null, 2);
@@ -118,16 +140,19 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
   if (url.pathname === '/api/motions') {
+    const backgroundList = buildBackgroundList();
     sendJson(res, 200, {
       vrm: `/${encodeURI(VRM_FILE)}`,
       total: motionList.length,
       motions: motionList,
+      backgrounds: backgroundList,
     });
     return;
   }
 
   if (url.pathname === '/api/health') {
-    sendJson(res, 200, { ok: true, total: motionList.length });
+    const backgroundList = buildBackgroundList();
+    sendJson(res, 200, { ok: true, total: motionList.length, backgrounds: backgroundList.length });
     return;
   }
 

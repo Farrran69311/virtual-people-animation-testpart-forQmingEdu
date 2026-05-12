@@ -372,6 +372,49 @@
         color: var(--muted);
       }
 
+      .camera-panel {
+        position: absolute;
+        right: 16px;
+        top: 132px;
+        z-index: 5;
+        width: min(360px, calc(100% - 32px));
+        display: grid;
+        gap: 8px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--panel-strong);
+        box-shadow: var(--shadow);
+      }
+
+      .camera-toolbar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .camera-meta {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .camera-code {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(18, 50, 78, 0.06);
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .camera-hint {
+        font-size: 11px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
       .speech-panel {
         position: absolute;
         left: 16px;
@@ -423,6 +466,12 @@
 
         .overlay {
           flex-direction: column;
+        }
+
+        .camera-panel {
+          position: static;
+          width: auto;
+          margin: 0 16px 16px;
         }
       }
     </style>
@@ -538,6 +587,19 @@
         </div>
       </div>
 
+      <div class="camera-panel">
+        <div class="camera-toolbar">
+          <button id="roamViewBtn" class="accent" type="button">全局漫游</button>
+          <button id="defaultViewBtn" class="secondary" type="button">默认镜头</button>
+          <button id="copyCameraBtn" class="secondary" type="button">复制坐标</button>
+        </div>
+        <div class="camera-meta">拖动画面后，这里会实时显示当前相机位置和观察目标坐标。</div>
+        <code id="cameraCoords" class="camera-code">camera: x 0.000, y 1.450, z 2.750
+target: x 0.000, y 1.200, z 0.000
+fov: 62.0</code>
+        <div class="camera-hint">鼠标左键旋转，右键平移，滚轮缩放。键盘 `W/A/S/D` 平移，`Q/E` 升降，`Shift` 加速，`[` / `]` 调整广角。</div>
+      </div>
+
       <div id="speechPanel" class="speech-panel hidden">
         <div id="speechText" class="speech-line"></div>
         <div id="speechMeta" class="speech-meta"></div>
@@ -558,6 +620,7 @@
     <script type="module">
       import * as THREE from 'three';
       import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+      import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
       import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
       import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
@@ -695,6 +758,10 @@
       const stopSpeakBtn = document.getElementById('stopSpeakBtn');
       const applyMoodBtn = document.getElementById('applyMoodBtn');
       const resetFaceBtn = document.getElementById('resetFaceBtn');
+      const roamViewBtn = document.getElementById('roamViewBtn');
+      const defaultViewBtn = document.getElementById('defaultViewBtn');
+      const copyCameraBtn = document.getElementById('copyCameraBtn');
+      const cameraCoords = document.getElementById('cameraCoords');
       const speechPanel = document.getElementById('speechPanel');
       const speechText = document.getElementById('speechText');
       const speechMeta = document.getElementById('speechMeta');
@@ -702,7 +769,7 @@
       const scene = new THREE.Scene();
       scene.background = new THREE.Color('#edf3f6');
 
-      const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+      const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 100);
       camera.position.set(0.0, 1.45, 2.75);
 
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -712,18 +779,18 @@
       const controls = new OrbitControls(camera, canvas);
       controls.target.set(0, 1.15, 0);
       controls.enableDamping = true;
-      controls.minDistance = 1.1;
-      controls.maxDistance = 6;
-      controls.maxPolarAngle = Math.PI * 0.55;
+      controls.minDistance = 0.6;
+      controls.maxDistance = 40;
+      controls.maxPolarAngle = Math.PI * 0.495;
 
-      const hemiLight = new THREE.HemisphereLight(0xffffff, 0xa4b1bf, 1.8);
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0xa4b1bf, 2.2);
       scene.add(hemiLight);
 
       const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
       keyLight.position.set(1.8, 3.2, 2.4);
       scene.add(keyLight);
 
-      const fillLight = new THREE.DirectionalLight(0xd8efff, 0.45);
+      const fillLight = new THREE.DirectionalLight(0xd8efff, 0.7);
       fillLight.position.set(-2.0, 1.8, -1.4);
       scene.add(fillLight);
 
@@ -753,7 +820,15 @@
       grid.material.transparent = true;
       scene.add(grid);
 
+      const stageRoot = new THREE.Group();
+      stageRoot.name = 'BackgroundStageRoot';
+      scene.add(stageRoot);
+
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('/node_modules/three/examples/jsm/libs/draco/gltf/');
+
       const gltfLoader = new GLTFLoader();
+      gltfLoader.setDRACOLoader(dracoLoader);
       gltfLoader.register((parser) => new VRMLoaderPlugin(parser));
 
       const fbxLoader = new FBXLoader();
@@ -762,6 +837,12 @@
       const tempVectorB = new THREE.Vector3();
       const tempVectorC = new THREE.Vector3();
       const tempVectorD = new THREE.Vector3();
+      const tempBox = new THREE.Box3();
+      const tempSize = new THREE.Vector3();
+      const tempCenter = new THREE.Vector3();
+      const tempCameraForward = new THREE.Vector3();
+      const tempCameraRight = new THREE.Vector3();
+      const tempMoveDelta = new THREE.Vector3();
 
       const state = {
         vrmUrl: '',
@@ -771,6 +852,7 @@
         currentAction: null,
         currentActionKey: '',
         motionList: [],
+        backgroundList: [],
         filteredList: [],
         currentIndex: -1,
         loop: true,
@@ -793,6 +875,33 @@
         synth: null,
         voices: [],
         selectedVoiceName: '',
+        hasBackgroundStage: false,
+        roamView: {
+          camera: { x: 0, y: 8.5, z: 11.5 },
+          target: { x: 0, y: 1.2, z: 0 },
+          fov: 68,
+        },
+        defaultView: {
+          camera: { x: 0.0, y: 1.45, z: 2.75 },
+          target: { x: 0.0, y: 1.2, z: 0.0 },
+          fov: 62,
+        },
+        teacherPose: { x: 0, y: 0, z: 0 },
+        teacherFacingStudentsView: {
+          camera: { x: 0, y: 1.45, z: 2.75 },
+          target: { x: 0, y: 1.2, z: 0 },
+          fov: 35,
+        },
+        roamKeys: {
+          KeyW: false,
+          KeyA: false,
+          KeyS: false,
+          KeyD: false,
+          KeyQ: false,
+          KeyE: false,
+          ShiftLeft: false,
+          ShiftRight: false,
+        },
         searchSuggestions: [],
         searchSuggestionIndex: -1,
       };
@@ -890,6 +999,186 @@
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+        updateCameraCoordsPanel();
+      }
+
+      function updateStageHelpers() {
+        const visible = !state.hasBackgroundStage;
+        floor.visible = visible;
+        ring.visible = visible;
+        grid.visible = visible;
+      }
+
+      function formatVec3(vec) {
+        return `x ${vec.x.toFixed(3)}, y ${vec.y.toFixed(3)}, z ${vec.z.toFixed(3)}`;
+      }
+
+      // 读取教师 VRM 当前的脚底世界坐标（站立时双脚中心 + 最低着地点的 Y）
+      function getAvatarFeetWorldPosition(out) {
+        const vrm = state.vrm;
+        const result = out || { x: 0, y: 0, z: 0 };
+        if (!vrm || !state.avatarRoot) {
+          result.x = result.y = result.z = 0;
+          return result;
+        }
+        state.avatarRoot.updateMatrixWorld(true);
+        const lf = findVRMBone(vrm, 'leftFoot');
+        const rf = findVRMBone(vrm, 'rightFoot');
+        if (!lf || !rf) {
+          result.x = state.avatarRoot.position.x;
+          result.y = state.avatarRoot.position.y;
+          result.z = state.avatarRoot.position.z;
+          return result;
+        }
+        const lp = lf.getWorldPosition(tempVectorA);
+        const rp = rf.getWorldPosition(tempVectorB);
+        const lt = findVRMBone(vrm, 'leftToes');
+        const rt = findVRMBone(vrm, 'rightToes');
+        const ltY = lt ? lt.getWorldPosition(tempVectorC).y : lp.y;
+        const rtY = rt ? rt.getWorldPosition(tempVectorD).y : rp.y;
+        result.x = (lp.x + rp.x) * 0.5;
+        result.y = Math.min(lp.y, rp.y, ltY, rtY);
+        result.z = (lp.z + rp.z) * 0.5;
+        return result;
+      }
+
+      function getTeacherPosition() {
+        if (!state.avatarRoot) return { x: 0, y: 0, z: 0 };
+        return getAvatarFeetWorldPosition();
+      }
+
+      function applyTeacherPose(targetRoot = state.avatarRoot) {
+        if (!targetRoot) return;
+
+        // 1) 先设置朝向（在 XZ 平面上面朝 facingTarget）
+        const facingTarget = state.teacherFacingStudentsView.target;
+        const dx = facingTarget.x - state.teacherPose.x;
+        const dz = facingTarget.z - state.teacherPose.z;
+        if (Math.abs(dx) > 1e-6 || Math.abs(dz) > 1e-6) {
+          targetRoot.rotation.y = Math.atan2(dx, dz);
+        }
+
+        // 2) 自校正放置：先把根放到目标位置，读取真实脚底，再用偏差修正一次。
+        //    这样不依赖任何预先测量的 offset，建筑模型的世界坐标系就是唯一基准。
+        targetRoot.position.set(state.teacherPose.x, state.teacherPose.y, state.teacherPose.z);
+        targetRoot.updateMatrixWorld(true);
+
+        if (state.vrm) {
+          const feet = getAvatarFeetWorldPosition(tempVectorA);
+          targetRoot.position.x += state.teacherPose.x - feet.x;
+          targetRoot.position.y += state.teacherPose.y - feet.y;
+          targetRoot.position.z += state.teacherPose.z - feet.z;
+          targetRoot.updateMatrixWorld(true);
+        }
+
+        updateCameraCoordsPanel();
+      }
+
+      function updateCameraCoordsPanel() {
+        const cameraPos = camera.position;
+        const target = controls.target;
+        cameraCoords.textContent = `camera: ${formatVec3(cameraPos)}
+target: ${formatVec3(target)}
+fov: ${camera.fov.toFixed(1)}`;
+      }
+
+      function setCameraFov(nextFov) {
+        camera.fov = Math.max(28, Math.min(95, nextFov));
+        camera.updateProjectionMatrix();
+        updateCameraCoordsPanel();
+      }
+
+      function setCameraPose(cameraPose, targetPose, nextFov = camera.fov) {
+        camera.position.set(cameraPose.x, cameraPose.y, cameraPose.z);
+        controls.target.set(targetPose.x, targetPose.y, targetPose.z);
+        setCameraFov(nextFov);
+        controls.update();
+        updateCameraCoordsPanel();
+      }
+
+      function frameStageForRoamView() {
+        if (!state.hasBackgroundStage) {
+          setCameraPose(state.roamView.camera, state.roamView.target, state.roamView.fov);
+          return;
+        }
+
+        tempBox.setFromObject(stageRoot);
+        if (tempBox.isEmpty()) {
+          setCameraPose(state.roamView.camera, state.roamView.target, state.roamView.fov);
+          return;
+        }
+
+        tempBox.getSize(tempSize);
+        tempBox.getCenter(tempCenter);
+        const radius = Math.max(tempSize.x, tempSize.z, tempSize.y * 1.2, 6);
+        const nextTarget = {
+          x: tempCenter.x,
+          y: Math.max(1.1, tempCenter.y),
+          z: tempCenter.z,
+        };
+        const nextCamera = {
+          x: tempCenter.x,
+          y: nextTarget.y + radius * 0.72,
+          z: tempCenter.z + radius * 1.18,
+        };
+
+        state.roamView = { camera: nextCamera, target: nextTarget, fov: 68 };
+        setCameraPose(nextCamera, nextTarget, state.roamView.fov);
+      }
+
+      function isTypingElement(element) {
+        return (
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLSelectElement ||
+          element instanceof HTMLTextAreaElement ||
+          element?.isContentEditable
+        );
+      }
+
+      function handleRoamKeyState(event, isPressed) {
+        if (!(event.code in state.roamKeys)) return false;
+        if (isPressed && isTypingElement(document.activeElement)) return false;
+
+        state.roamKeys[event.code] = isPressed;
+        return true;
+      }
+
+      function updateRoamMovement(delta) {
+        const keys = state.roamKeys;
+        const horizontal = Number(keys.KeyD) - Number(keys.KeyA);
+        const depth = Number(keys.KeyW) - Number(keys.KeyS);
+        const vertical = Number(keys.KeyE) - Number(keys.KeyQ);
+        if (!horizontal && !depth && !vertical) return;
+
+        camera.getWorldDirection(tempCameraForward);
+        tempCameraForward.y = 0;
+        if (tempCameraForward.lengthSq() < 1e-6) {
+          tempCameraForward.set(0, 0, -1);
+        } else {
+          tempCameraForward.normalize();
+        }
+
+        tempCameraRight.crossVectors(tempCameraForward, camera.up).normalize();
+        tempMoveDelta.set(0, 0, 0);
+
+        if (depth) {
+          tempMoveDelta.addScaledVector(tempCameraForward, depth);
+        }
+        if (horizontal) {
+          tempMoveDelta.addScaledVector(tempCameraRight, horizontal);
+        }
+        if (vertical) {
+          tempMoveDelta.y += vertical;
+        }
+        if (tempMoveDelta.lengthSq() < 1e-6) return;
+
+        tempMoveDelta.normalize();
+        const speed = (keys.ShiftLeft || keys.ShiftRight ? 7.5 : 3.2) * delta;
+        tempMoveDelta.multiplyScalar(speed);
+        camera.position.add(tempMoveDelta);
+        controls.target.add(tempMoveDelta);
+        controls.update();
+        updateCameraCoordsPanel();
       }
 
       function normalizeMixamoNodeName(name) {
@@ -912,26 +1201,9 @@
         return vrm.humanoid?.getRawBoneNode(name) || vrm.humanoid?.getNormalizedBoneNode(name) || null;
       }
 
-      function anchorAvatarToFeetCenter(vrm, avatarRoot) {
-        const leftFoot = findVRMBone(vrm, 'leftFoot');
-        const rightFoot = findVRMBone(vrm, 'rightFoot');
-        if (!leftFoot || !rightFoot) return;
-
-        const leftFootPos = leftFoot.getWorldPosition(tempVectorA);
-        const rightFootPos = rightFoot.getWorldPosition(tempVectorB);
-        const leftToes = findVRMBone(vrm, 'leftToes');
-        const rightToes = findVRMBone(vrm, 'rightToes');
-        const leftToesY = leftToes?.getWorldPosition(tempVectorC).y ?? leftFootPos.y;
-        const rightToesY = rightToes?.getWorldPosition(tempVectorD).y ?? rightFootPos.y;
-
-        const centerX = (leftFootPos.x + rightFootPos.x) * 0.5;
-        const centerZ = (leftFootPos.z + rightFootPos.z) * 0.5;
-        const groundY = Math.min(leftFootPos.y, rightFootPos.y, leftToesY, rightToesY);
-
-        avatarRoot.position.x -= centerX;
-        avatarRoot.position.y -= groundY;
-        avatarRoot.position.z -= centerZ;
-        avatarRoot.updateMatrixWorld(true);
+      function anchorAvatarToFeetCenter(_vrm, _avatarRoot) {
+        // 旧实现已弃用：现在由 applyTeacherPose 通过读取真实脚底世界坐标做自校正放置，
+        // 不再依赖预先测量的脚底偏移。保留空函数以避免破坏调用方。
       }
 
       function getGroundReferenceBones(vrm) {
@@ -1546,8 +1818,31 @@
         scene.add(avatarRoot);
         avatarRoot.updateMatrixWorld(true);
         anchorAvatarToFeetCenter(vrm, avatarRoot);
+        applyTeacherPose(avatarRoot);
+        updateCameraCoordsPanel();
 
         return { vrm, avatarRoot };
+      }
+
+      async function loadBackgroundStages(backgrounds) {
+        stageRoot.clear();
+        state.hasBackgroundStage = false;
+        updateStageHelpers();
+
+        if (!backgrounds?.length) return;
+
+        for (const background of backgrounds) {
+          const gltf = await gltfLoader.loadAsync(background.path);
+          const backgroundScene = gltf.scene || gltf.scenes?.[0];
+          if (!backgroundScene) continue;
+
+          backgroundScene.name = background.name || background.fileName || 'BackgroundStage';
+          stageRoot.add(backgroundScene);
+          state.hasBackgroundStage = true;
+        }
+
+        updateStageHelpers();
+        frameStageForRoamView();
       }
 
       async function loadFBX(url) {
@@ -1852,6 +2147,7 @@
         const payload = await response.json();
         state.motionList = payload.motions;
         state.vrmUrl = payload.vrm;
+        state.backgroundList = payload.backgrounds || [];
 
         const groups = [...new Set(state.motionList.map((item) => item.group))];
         for (const group of groups) {
@@ -1863,6 +2159,7 @@
 
         populateActionSelect();
         filterMotions();
+        // 已移除摄影棚背景场景，仅保留圆形底座/网格
 
         setStatus('', '正在加载 VRM 模型');
         const loadedAvatar = await loadVRM(state.vrmUrl);
@@ -1877,6 +2174,7 @@
         initVoices();
         clearAllExpressions();
         applyMood('neutral');
+        setCameraPose(state.defaultView.camera, state.defaultView.target, state.defaultView.fov);
 
         currentTitle.textContent = 'VRM 已加载';
         currentMeta.textContent = `动作总数 ${state.motionList.length}，可以直接测试动作、表情和前端口型。`;
@@ -1944,6 +2242,26 @@
           hideSearchSuggestions();
         }
       });
+      controls.addEventListener('change', updateCameraCoordsPanel);
+      roamViewBtn.addEventListener('click', () => {
+        frameStageForRoamView();
+      });
+      defaultViewBtn.addEventListener('click', () => {
+        setCameraPose(state.defaultView.camera, state.defaultView.target, state.defaultView.fov);
+      });
+      copyCameraBtn.addEventListener('click', async () => {
+        const text = cameraCoords.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          speechText.textContent = '';
+          speechMeta.textContent = '已复制当前相机与教师坐标';
+          speechPanel.classList.remove('hidden');
+        } catch (_error) {
+          speechText.textContent = '';
+          speechMeta.textContent = text;
+          speechPanel.classList.remove('hidden');
+        }
+      });
 
       applyMoodBtn.addEventListener('click', () => {
         stopSpeaking();
@@ -1984,6 +2302,11 @@
       });
 
       window.addEventListener('keydown', (event) => {
+        if (handleRoamKeyState(event, true)) {
+          event.preventDefault();
+          return;
+        }
+
         const active = document.activeElement;
         if (
           active instanceof HTMLInputElement ||
@@ -2007,6 +2330,18 @@
           event.preventDefault();
           state.loop = !state.loop;
           applyPlaybackState();
+        } else if (event.key === '[') {
+          event.preventDefault();
+          setCameraFov(camera.fov - 2);
+        } else if (event.key === ']') {
+          event.preventDefault();
+          setCameraFov(camera.fov + 2);
+        }
+      });
+
+      window.addEventListener('keyup', (event) => {
+        if (handleRoamKeyState(event, false)) {
+          event.preventDefault();
         }
       });
 
@@ -2015,12 +2350,15 @@
       renderer.setAnimationLoop(() => {
         clock.update();
         const delta = clock.getDelta();
+        updateRoamMovement(delta);
         controls.update();
         state.mixer?.update(delta);
         updateSpeechMotion(delta);
         state.vrm?.update(delta);
         renderer.render(scene, camera);
       });
+
+      updateCameraCoordsPanel();
 
       init().catch((error) => {
         console.error(error);
