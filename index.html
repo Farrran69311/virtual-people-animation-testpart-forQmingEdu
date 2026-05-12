@@ -820,9 +820,6 @@ fov: 62.0</code>
       grid.material.transparent = true;
       scene.add(grid);
 
-      const stageRoot = new THREE.Group();
-      stageRoot.name = 'BackgroundStageRoot';
-      scene.add(stageRoot);
 
       const dracoLoader = new DRACOLoader();
       dracoLoader.setDecoderPath('/node_modules/three/examples/jsm/libs/draco/gltf/');
@@ -837,9 +834,6 @@ fov: 62.0</code>
       const tempVectorB = new THREE.Vector3();
       const tempVectorC = new THREE.Vector3();
       const tempVectorD = new THREE.Vector3();
-      const tempBox = new THREE.Box3();
-      const tempSize = new THREE.Vector3();
-      const tempCenter = new THREE.Vector3();
       const tempCameraForward = new THREE.Vector3();
       const tempCameraRight = new THREE.Vector3();
       const tempMoveDelta = new THREE.Vector3();
@@ -852,7 +846,6 @@ fov: 62.0</code>
         currentAction: null,
         currentActionKey: '',
         motionList: [],
-        backgroundList: [],
         filteredList: [],
         currentIndex: -1,
         loop: true,
@@ -875,7 +868,6 @@ fov: 62.0</code>
         synth: null,
         voices: [],
         selectedVoiceName: '',
-        hasBackgroundStage: false,
         roamView: {
           camera: { x: 0, y: 8.5, z: 11.5 },
           target: { x: 0, y: 1.2, z: 0 },
@@ -1002,12 +994,7 @@ fov: 62.0</code>
         updateCameraCoordsPanel();
       }
 
-      function updateStageHelpers() {
-        const visible = !state.hasBackgroundStage;
-        floor.visible = visible;
-        ring.visible = visible;
-        grid.visible = visible;
-      }
+
 
       function formatVec3(vec) {
         return `x ${vec.x.toFixed(3)}, y ${vec.y.toFixed(3)}, z ${vec.z.toFixed(3)}`;
@@ -1097,33 +1084,7 @@ fov: ${camera.fov.toFixed(1)}`;
       }
 
       function frameStageForRoamView() {
-        if (!state.hasBackgroundStage) {
-          setCameraPose(state.roamView.camera, state.roamView.target, state.roamView.fov);
-          return;
-        }
-
-        tempBox.setFromObject(stageRoot);
-        if (tempBox.isEmpty()) {
-          setCameraPose(state.roamView.camera, state.roamView.target, state.roamView.fov);
-          return;
-        }
-
-        tempBox.getSize(tempSize);
-        tempBox.getCenter(tempCenter);
-        const radius = Math.max(tempSize.x, tempSize.z, tempSize.y * 1.2, 6);
-        const nextTarget = {
-          x: tempCenter.x,
-          y: Math.max(1.1, tempCenter.y),
-          z: tempCenter.z,
-        };
-        const nextCamera = {
-          x: tempCenter.x,
-          y: nextTarget.y + radius * 0.72,
-          z: tempCenter.z + radius * 1.18,
-        };
-
-        state.roamView = { camera: nextCamera, target: nextTarget, fov: 68 };
-        setCameraPose(nextCamera, nextTarget, state.roamView.fov);
+        setCameraPose(state.roamView.camera, state.roamView.target, state.roamView.fov);
       }
 
       function isTypingElement(element) {
@@ -1824,27 +1785,6 @@ fov: ${camera.fov.toFixed(1)}`;
         return { vrm, avatarRoot };
       }
 
-      async function loadBackgroundStages(backgrounds) {
-        stageRoot.clear();
-        state.hasBackgroundStage = false;
-        updateStageHelpers();
-
-        if (!backgrounds?.length) return;
-
-        for (const background of backgrounds) {
-          const gltf = await gltfLoader.loadAsync(background.path);
-          const backgroundScene = gltf.scene || gltf.scenes?.[0];
-          if (!backgroundScene) continue;
-
-          backgroundScene.name = background.name || background.fileName || 'BackgroundStage';
-          stageRoot.add(backgroundScene);
-          state.hasBackgroundStage = true;
-        }
-
-        updateStageHelpers();
-        frameStageForRoamView();
-      }
-
       async function loadFBX(url) {
         if (!loaderCache.has(url)) {
           loaderCache.set(url, fbxLoader.loadAsync(url));
@@ -2147,7 +2087,6 @@ fov: ${camera.fov.toFixed(1)}`;
         const payload = await response.json();
         state.motionList = payload.motions;
         state.vrmUrl = payload.vrm;
-        state.backgroundList = payload.backgrounds || [];
 
         const groups = [...new Set(state.motionList.map((item) => item.group))];
         for (const group of groups) {
