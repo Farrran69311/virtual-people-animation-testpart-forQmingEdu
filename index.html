@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%234f8cff'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' font-size='38' font-family='Segoe UI,Arial' fill='white' font-weight='bold' dominant-baseline='middle'%3EQ%3C/text%3E%3C/svg%3E" />
     <title>启明数字人预览器</title>
     <style>
       :root {
@@ -86,6 +87,10 @@
         margin-top: 14px;
       }
 
+      .search-autocomplete {
+        position: relative;
+      }
+
       input,
       select,
       button,
@@ -108,6 +113,61 @@
         min-height: 96px;
         resize: vertical;
         line-height: 1.55;
+      }
+
+      .search-suggest {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        z-index: 20;
+        display: grid;
+        gap: 4px;
+        max-height: 280px;
+        overflow: auto;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 18px 40px rgba(31, 52, 79, 0.16);
+      }
+
+      .search-suggest-item {
+        width: 100%;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: transparent;
+        color: var(--text);
+        text-align: left;
+      }
+
+      .search-suggest-item:hover {
+        transform: none;
+      }
+
+      .search-suggest-item.active,
+      .search-suggest-item:hover {
+        background: var(--accent-soft);
+        border-color: rgba(15, 123, 108, 0.16);
+      }
+
+      .search-suggest-name {
+        font-size: 13px;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+
+      .search-suggest-meta {
+        margin-top: 5px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .search-suggest-empty {
+        padding: 10px 12px;
+        font-size: 12px;
+        color: var(--muted);
       }
 
       .controls {
@@ -377,7 +437,10 @@
         </div>
 
         <div class="search-wrap">
-          <input id="searchInput" type="search" placeholder="搜索动作名，比如 walk / idle / point" />
+          <div class="search-autocomplete">
+            <input id="searchInput" type="search" autocomplete="off" placeholder="搜索动作名，比如 walk / idle / point" />
+            <div id="searchSuggest" class="search-suggest hidden"></div>
+          </div>
           <div class="controls">
             <select id="groupSelect">
               <option value="all">全部分组</option>
@@ -606,9 +669,12 @@
         surprised: { nodAmp: 0.02, swayAmp: 0.014, blinkChance: 0.0025 },
       };
 
-      const clock = new THREE.Clock();
+      const clock = new THREE.Timer();
+      clock.connect(document);
       const canvas = document.getElementById('canvas');
       const searchInput = document.getElementById('searchInput');
+      const searchAutocomplete = searchInput.parentElement;
+      const searchSuggest = document.getElementById('searchSuggest');
       const groupSelect = document.getElementById('groupSelect');
       const speedSelect = document.getElementById('speedSelect');
       const prevBtn = document.getElementById('prevBtn');
@@ -727,7 +793,11 @@
         synth: null,
         voices: [],
         selectedVoiceName: '',
+        searchSuggestions: [],
+        searchSuggestionIndex: -1,
       };
+
+      const MAX_SEARCH_SUGGESTIONS = 8;
 
       function setStatus(kind, text) {
         statusText.textContent = text;
@@ -1551,6 +1621,123 @@
         updateSelectionMeta();
       }
 
+      function scoreMotionSuggestion(motion, keyword) {
+        if (!keyword) return Number.POSITIVE_INFINITY;
+
+        const name = motion.name.toLowerCase();
+        const fileName = motion.fileName.toLowerCase();
+        if (name === keyword) return 0;
+        if (fileName === keyword || fileName === `${keyword}.fbx`) return 1;
+        if (name.startsWith(keyword)) return 2;
+        if (fileName.startsWith(keyword)) return 3;
+
+        const nameIndex = name.indexOf(keyword);
+        if (nameIndex >= 0) return 10 + nameIndex;
+
+        const fileNameIndex = fileName.indexOf(keyword);
+        if (fileNameIndex >= 0) return 20 + fileNameIndex;
+
+        return Number.POSITIVE_INFINITY;
+      }
+
+      function buildSearchSuggestions() {
+        const keyword = searchInput.value.trim().toLowerCase();
+        const group = groupSelect.value;
+
+        if (!keyword) return [];
+
+        return state.motionList
+          .filter((motion) => group === 'all' || motion.group === group)
+          .map((motion) => ({ motion, score: scoreMotionSuggestion(motion, keyword) }))
+          .filter(({ score }) => Number.isFinite(score))
+          .sort((a, b) => {
+            if (a.score !== b.score) return a.score - b.score;
+            return a.motion.fileName.localeCompare(b.motion.fileName, 'en', { numeric: true, sensitivity: 'base' });
+          })
+          .slice(0, MAX_SEARCH_SUGGESTIONS)
+          .map(({ motion }) => motion);
+      }
+
+      function setSearchSuggestionIndex(index) {
+        state.searchSuggestionIndex = index;
+        for (const item of searchSuggest.querySelectorAll('.search-suggest-item')) {
+          item.classList.toggle('active', Number(item.dataset.index) === index);
+        }
+      }
+
+      function hideSearchSuggestions() {
+        state.searchSuggestions = [];
+        state.searchSuggestionIndex = -1;
+        searchSuggest.classList.add('hidden');
+        searchSuggest.innerHTML = '';
+      }
+
+      function renderSearchSuggestions() {
+        if (document.activeElement !== searchInput) {
+          hideSearchSuggestions();
+          return;
+        }
+
+        state.searchSuggestions = buildSearchSuggestions();
+        searchSuggest.innerHTML = '';
+
+        if (!state.searchSuggestions.length) {
+          hideSearchSuggestions();
+          return;
+        }
+
+        for (const [index, motion] of state.searchSuggestions.entries()) {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.tabIndex = -1;
+          item.className = 'search-suggest-item';
+          item.dataset.index = String(index);
+          item.innerHTML = `
+            <div class="search-suggest-name">${motion.name}</div>
+            <div class="search-suggest-meta">分组 ${motion.group} · ${motion.fileName}</div>
+          `;
+          item.addEventListener('mouseenter', () => {
+            setSearchSuggestionIndex(index);
+          });
+          item.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            applySearchSuggestion(index);
+          });
+          searchSuggest.appendChild(item);
+        }
+
+        const nextIndex =
+          state.searchSuggestionIndex >= 0 && state.searchSuggestionIndex < state.searchSuggestions.length
+            ? state.searchSuggestionIndex
+            : 0;
+        setSearchSuggestionIndex(nextIndex);
+        searchSuggest.classList.remove('hidden');
+      }
+
+      async function applySearchSuggestion(index) {
+        const motion = state.searchSuggestions[index];
+        if (!motion) return;
+
+        searchInput.value = motion.name;
+        filterMotions();
+        hideSearchSuggestions();
+        await playMotionByPath(motion.path);
+        searchInput.focus();
+      }
+
+      function moveSearchSuggestion(step) {
+        if (!state.searchSuggestions.length) {
+          renderSearchSuggestions();
+        }
+        if (!state.searchSuggestions.length) return;
+
+        const total = state.searchSuggestions.length;
+        const baseIndex = state.searchSuggestionIndex >= 0 ? state.searchSuggestionIndex : step > 0 ? -1 : 0;
+        const nextIndex = (baseIndex + step + total) % total;
+        setSearchSuggestionIndex(nextIndex);
+        searchSuggest.classList.remove('hidden');
+      }
+
       function filterMotions() {
         const keyword = searchInput.value.trim().toLowerCase();
         const group = groupSelect.value;
@@ -1569,6 +1756,7 @@
         }
 
         renderMotionList();
+        renderSearchSuggestions();
       }
 
       async function playMotionByIndex(index) {
@@ -1703,6 +1891,39 @@
       }
 
       searchInput.addEventListener('input', filterMotions);
+      searchInput.addEventListener('focus', () => {
+        renderSearchSuggestions();
+      });
+      searchInput.addEventListener('blur', () => {
+        window.setTimeout(() => {
+          if (!searchAutocomplete.contains(document.activeElement)) {
+            hideSearchSuggestions();
+          }
+        }, 0);
+      });
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          moveSearchSuggestion(1);
+          return;
+        }
+
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          moveSearchSuggestion(-1);
+          return;
+        }
+
+        if (event.key === 'Enter' && !searchSuggest.classList.contains('hidden') && state.searchSuggestionIndex >= 0) {
+          event.preventDefault();
+          applySearchSuggestion(state.searchSuggestionIndex);
+          return;
+        }
+
+        if (event.key === 'Escape') {
+          hideSearchSuggestions();
+        }
+      });
       groupSelect.addEventListener('change', filterMotions);
       speedSelect.addEventListener('change', () => {
         state.speed = Number(speedSelect.value);
@@ -1718,6 +1939,11 @@
       });
       prevBtn.addEventListener('click', () => moveSelection(-1));
       nextBtn.addEventListener('click', () => moveSelection(1));
+      document.addEventListener('click', (event) => {
+        if (!searchAutocomplete.contains(event.target)) {
+          hideSearchSuggestions();
+        }
+      });
 
       applyMoodBtn.addEventListener('click', () => {
         stopSpeaking();
@@ -1787,6 +2013,7 @@
       window.addEventListener('resize', resizeRenderer);
 
       renderer.setAnimationLoop(() => {
+        clock.update();
         const delta = clock.getDelta();
         controls.update();
         state.mixer?.update(delta);
