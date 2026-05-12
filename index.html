@@ -372,49 +372,6 @@
         color: var(--muted);
       }
 
-      .camera-panel {
-        position: absolute;
-        right: 16px;
-        top: 132px;
-        z-index: 5;
-        width: min(360px, calc(100% - 32px));
-        display: grid;
-        gap: 8px;
-        padding: 14px 16px;
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        background: var(--panel-strong);
-        box-shadow: var(--shadow);
-      }
-
-      .camera-toolbar {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-      }
-
-      .camera-meta {
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .camera-code {
-        display: block;
-        padding: 8px 10px;
-        border-radius: 10px;
-        background: rgba(18, 50, 78, 0.06);
-        font-size: 12px;
-        line-height: 1.45;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-
-      .camera-hint {
-        font-size: 11px;
-        line-height: 1.5;
-        color: var(--muted);
-      }
-
       .speech-panel {
         position: absolute;
         left: 16px;
@@ -466,12 +423,6 @@
 
         .overlay {
           flex-direction: column;
-        }
-
-        .camera-panel {
-          position: static;
-          width: auto;
-          margin: 0 16px 16px;
         }
       }
     </style>
@@ -585,19 +536,6 @@
             <code>L</code> 切换循环。
           </div>
         </div>
-      </div>
-
-      <div class="camera-panel">
-        <div class="camera-toolbar">
-          <button id="roamViewBtn" class="accent" type="button">全局漫游</button>
-          <button id="defaultViewBtn" class="secondary" type="button">默认镜头</button>
-          <button id="copyCameraBtn" class="secondary" type="button">复制坐标</button>
-        </div>
-        <div class="camera-meta">拖动画面后，这里会实时显示当前相机位置和观察目标坐标。</div>
-        <code id="cameraCoords" class="camera-code">camera: x 0.000, y 1.450, z 2.750
-target: x 0.000, y 1.200, z 0.000
-fov: 62.0</code>
-        <div class="camera-hint">鼠标左键旋转，右键平移，滚轮缩放。键盘 `W/A/S/D` 平移，`Q/E` 升降，`Shift` 加速，`[` / `]` 调整广角。</div>
       </div>
 
       <div id="speechPanel" class="speech-panel hidden">
@@ -758,10 +696,6 @@ fov: 62.0</code>
       const stopSpeakBtn = document.getElementById('stopSpeakBtn');
       const applyMoodBtn = document.getElementById('applyMoodBtn');
       const resetFaceBtn = document.getElementById('resetFaceBtn');
-      const roamViewBtn = document.getElementById('roamViewBtn');
-      const defaultViewBtn = document.getElementById('defaultViewBtn');
-      const copyCameraBtn = document.getElementById('copyCameraBtn');
-      const cameraCoords = document.getElementById('cameraCoords');
       const speechPanel = document.getElementById('speechPanel');
       const speechText = document.getElementById('speechText');
       const speechMeta = document.getElementById('speechMeta');
@@ -834,9 +768,6 @@ fov: 62.0</code>
       const tempVectorB = new THREE.Vector3();
       const tempVectorC = new THREE.Vector3();
       const tempVectorD = new THREE.Vector3();
-      const tempCameraForward = new THREE.Vector3();
-      const tempCameraRight = new THREE.Vector3();
-      const tempMoveDelta = new THREE.Vector3();
 
       const state = {
         vrmUrl: '',
@@ -868,11 +799,6 @@ fov: 62.0</code>
         synth: null,
         voices: [],
         selectedVoiceName: '',
-        roamView: {
-          camera: { x: 0, y: 8.5, z: 11.5 },
-          target: { x: 0, y: 1.2, z: 0 },
-          fov: 68,
-        },
         defaultView: {
           camera: { x: 0.0, y: 1.45, z: 2.75 },
           target: { x: 0.0, y: 1.2, z: 0.0 },
@@ -883,16 +809,6 @@ fov: 62.0</code>
           camera: { x: 0, y: 1.45, z: 2.75 },
           target: { x: 0, y: 1.2, z: 0 },
           fov: 35,
-        },
-        roamKeys: {
-          KeyW: false,
-          KeyA: false,
-          KeyS: false,
-          KeyD: false,
-          KeyQ: false,
-          KeyE: false,
-          ShiftLeft: false,
-          ShiftRight: false,
         },
         searchSuggestions: [],
         searchSuggestionIndex: -1,
@@ -991,7 +907,6 @@ fov: 62.0</code>
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
-        updateCameraCoordsPanel();
       }
 
 
@@ -1057,22 +972,11 @@ fov: 62.0</code>
           targetRoot.position.z += state.teacherPose.z - feet.z;
           targetRoot.updateMatrixWorld(true);
         }
-
-        updateCameraCoordsPanel();
-      }
-
-      function updateCameraCoordsPanel() {
-        const cameraPos = camera.position;
-        const target = controls.target;
-        cameraCoords.textContent = `camera: ${formatVec3(cameraPos)}
-target: ${formatVec3(target)}
-fov: ${camera.fov.toFixed(1)}`;
       }
 
       function setCameraFov(nextFov) {
         camera.fov = Math.max(28, Math.min(95, nextFov));
         camera.updateProjectionMatrix();
-        updateCameraCoordsPanel();
       }
 
       function setCameraPose(cameraPose, targetPose, nextFov = camera.fov) {
@@ -1080,66 +984,6 @@ fov: ${camera.fov.toFixed(1)}`;
         controls.target.set(targetPose.x, targetPose.y, targetPose.z);
         setCameraFov(nextFov);
         controls.update();
-        updateCameraCoordsPanel();
-      }
-
-      function frameStageForRoamView() {
-        setCameraPose(state.roamView.camera, state.roamView.target, state.roamView.fov);
-      }
-
-      function isTypingElement(element) {
-        return (
-          element instanceof HTMLInputElement ||
-          element instanceof HTMLSelectElement ||
-          element instanceof HTMLTextAreaElement ||
-          element?.isContentEditable
-        );
-      }
-
-      function handleRoamKeyState(event, isPressed) {
-        if (!(event.code in state.roamKeys)) return false;
-        if (isPressed && isTypingElement(document.activeElement)) return false;
-
-        state.roamKeys[event.code] = isPressed;
-        return true;
-      }
-
-      function updateRoamMovement(delta) {
-        const keys = state.roamKeys;
-        const horizontal = Number(keys.KeyD) - Number(keys.KeyA);
-        const depth = Number(keys.KeyW) - Number(keys.KeyS);
-        const vertical = Number(keys.KeyE) - Number(keys.KeyQ);
-        if (!horizontal && !depth && !vertical) return;
-
-        camera.getWorldDirection(tempCameraForward);
-        tempCameraForward.y = 0;
-        if (tempCameraForward.lengthSq() < 1e-6) {
-          tempCameraForward.set(0, 0, -1);
-        } else {
-          tempCameraForward.normalize();
-        }
-
-        tempCameraRight.crossVectors(tempCameraForward, camera.up).normalize();
-        tempMoveDelta.set(0, 0, 0);
-
-        if (depth) {
-          tempMoveDelta.addScaledVector(tempCameraForward, depth);
-        }
-        if (horizontal) {
-          tempMoveDelta.addScaledVector(tempCameraRight, horizontal);
-        }
-        if (vertical) {
-          tempMoveDelta.y += vertical;
-        }
-        if (tempMoveDelta.lengthSq() < 1e-6) return;
-
-        tempMoveDelta.normalize();
-        const speed = (keys.ShiftLeft || keys.ShiftRight ? 7.5 : 3.2) * delta;
-        tempMoveDelta.multiplyScalar(speed);
-        camera.position.add(tempMoveDelta);
-        controls.target.add(tempMoveDelta);
-        controls.update();
-        updateCameraCoordsPanel();
       }
 
       function normalizeMixamoNodeName(name) {
@@ -1780,7 +1624,6 @@ fov: ${camera.fov.toFixed(1)}`;
         avatarRoot.updateMatrixWorld(true);
         anchorAvatarToFeetCenter(vrm, avatarRoot);
         applyTeacherPose(avatarRoot);
-        updateCameraCoordsPanel();
 
         return { vrm, avatarRoot };
       }
@@ -2181,26 +2024,6 @@ fov: ${camera.fov.toFixed(1)}`;
           hideSearchSuggestions();
         }
       });
-      controls.addEventListener('change', updateCameraCoordsPanel);
-      roamViewBtn.addEventListener('click', () => {
-        frameStageForRoamView();
-      });
-      defaultViewBtn.addEventListener('click', () => {
-        setCameraPose(state.defaultView.camera, state.defaultView.target, state.defaultView.fov);
-      });
-      copyCameraBtn.addEventListener('click', async () => {
-        const text = cameraCoords.textContent;
-        try {
-          await navigator.clipboard.writeText(text);
-          speechText.textContent = '';
-          speechMeta.textContent = '已复制当前相机与教师坐标';
-          speechPanel.classList.remove('hidden');
-        } catch (_error) {
-          speechText.textContent = '';
-          speechMeta.textContent = text;
-          speechPanel.classList.remove('hidden');
-        }
-      });
 
       applyMoodBtn.addEventListener('click', () => {
         stopSpeaking();
@@ -2241,11 +2064,6 @@ fov: ${camera.fov.toFixed(1)}`;
       });
 
       window.addEventListener('keydown', (event) => {
-        if (handleRoamKeyState(event, true)) {
-          event.preventDefault();
-          return;
-        }
-
         const active = document.activeElement;
         if (
           active instanceof HTMLInputElement ||
@@ -2278,26 +2096,17 @@ fov: ${camera.fov.toFixed(1)}`;
         }
       });
 
-      window.addEventListener('keyup', (event) => {
-        if (handleRoamKeyState(event, false)) {
-          event.preventDefault();
-        }
-      });
-
       window.addEventListener('resize', resizeRenderer);
 
       renderer.setAnimationLoop(() => {
         clock.update();
         const delta = clock.getDelta();
-        updateRoamMovement(delta);
         controls.update();
         state.mixer?.update(delta);
         updateSpeechMotion(delta);
         state.vrm?.update(delta);
         renderer.render(scene, camera);
       });
-
-      updateCameraCoordsPanel();
 
       init().catch((error) => {
         console.error(error);
