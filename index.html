@@ -62,6 +62,13 @@
         overflow: hidden;
       }
 
+      .sidebar-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding-bottom: 12px;
+      }
+
       .sidebar-head {
         padding: 18px 18px 14px;
         border-bottom: 1px solid var(--border);
@@ -270,6 +277,29 @@
         margin-top: 10px;
       }
 
+      .vector-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .debug-block {
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.88);
+      }
+
+      .debug-readout {
+        margin-top: 6px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: "Cascadia Mono", "Consolas", monospace;
+        font-size: 11px;
+        line-height: 1.6;
+        color: #294357;
+      }
+
       .helper-label {
         font-size: 12px;
         color: var(--muted);
@@ -286,9 +316,6 @@
       }
 
       .motion-list {
-        flex: 1;
-        min-height: 0;
-        overflow: auto;
         padding: 10px;
       }
 
@@ -467,56 +494,114 @@
         </div>
       </div>
 
-      <div class="helper-card">
-        <h2 class="helper-title">前瞻测试面板</h2>
-        <div class="helper-text">
-          这里不依赖后端口型，只在前端根据你输入的文字按顺序驱动嘴型。
-          动作和心情也只做演示，方便你验证启明智教未来返回 <code>action</code> 和 <code>mood</code> 字段时的效果。
+      <div class="sidebar-scroll">
+        <div class="helper-card">
+          <h2 class="helper-title">前瞻测试面板</h2>
+          <div class="helper-text">
+            这里不依赖后端口型，只在前端根据你输入的文字按顺序驱动嘴型。
+            动作和心情也只做演示，方便你验证启明智教未来返回 <code>action</code> 和 <code>mood</code> 字段时的效果。
+          </div>
+
+          <div class="helper-grid test-form">
+            <div>
+              <div class="helper-label">当前测试动作</div>
+              <select id="actionSelect">
+                <option value="">跟随左侧当前动作</option>
+              </select>
+            </div>
+
+            <div>
+              <div class="helper-label">当前测试表情</div>
+              <select id="moodSelect">
+                <option value="neutral">neutral / 中性</option>
+                <option value="happy">happy / 开心</option>
+                <option value="relaxed">relaxed / 放松</option>
+                <option value="sad">sad / 难过</option>
+                <option value="angry">angry / 生气</option>
+                <option value="surprised">surprised / 惊讶</option>
+              </select>
+            </div>
+
+            <div>
+              <div class="helper-label">测试文本</div>
+              <textarea id="speechInput" placeholder="例如：同学们好，今天我们开始上课。这个版本只测试纯前端按字顺序摆口型。">同学们好，今天我们开始上课。这是一个纯前端测试口型的预览版本。</textarea>
+            </div>
+
+            <div class="test-toolbar">
+              <button id="speakBtn" class="accent" type="button">发送并说话</button>
+              <button id="stopSpeakBtn" class="danger" type="button">停止说话</button>
+            </div>
+
+            <div class="test-toolbar">
+              <button id="applyMoodBtn" class="secondary" type="button">只应用表情</button>
+              <button id="resetFaceBtn" class="secondary" type="button">重置表情口型</button>
+            </div>
+          </div>
         </div>
 
-        <div class="helper-grid test-form">
-          <div>
-            <div class="helper-label">当前测试动作</div>
-            <select id="actionSelect">
-              <option value="">跟随左侧当前动作</option>
-            </select>
+        <div class="helper-card">
+          <h2 class="helper-title">场景归一化</h2>
+          <div class="helper-text">
+            背景会自动按包围盒落地，并把 XZ 中心回收到世界原点。人物通过 <code>TeacherRig</code> 套壳站位，
+            后面你漫游时直接看世界坐标，就能稳定记录相机位和教师位。
           </div>
 
-          <div>
-            <div class="helper-label">当前测试表情</div>
-            <select id="moodSelect">
-              <option value="neutral">neutral / 中性</option>
-              <option value="happy">happy / 开心</option>
-              <option value="relaxed">relaxed / 放松</option>
-              <option value="sad">sad / 难过</option>
-              <option value="angry">angry / 生气</option>
-              <option value="surprised">surprised / 惊讶</option>
-            </select>
-          </div>
+          <div class="helper-grid">
+            <div>
+              <div class="helper-label">当前背景</div>
+              <select id="backgroundSelect">
+                <option value="">无背景（仅辅助地台）</option>
+              </select>
+            </div>
 
-          <div>
-            <div class="helper-label">测试文本</div>
-            <textarea id="speechInput" placeholder="例如：同学们好，今天我们开始上课。这个版本只测试纯前端按字顺序摆口型。">同学们好，今天我们开始上课。这是一个纯前端测试口型的预览版本。</textarea>
-          </div>
+            <div class="test-toolbar">
+              <button id="resetCameraBtn" class="secondary" type="button">重置镜头</button>
+              <button id="teacherToTargetBtn" class="secondary" type="button">教师到焦点</button>
+            </div>
 
-          <div class="test-toolbar">
-            <button id="speakBtn" class="accent" type="button">发送并说话</button>
-            <button id="stopSpeakBtn" class="danger" type="button">停止说话</button>
-          </div>
+            <div class="test-toolbar">
+              <button id="teacherFaceCameraBtn" class="secondary" type="button">教师朝向镜头</button>
+              <button id="copySceneStateBtn" class="secondary" type="button">复制场景参数</button>
+            </div>
 
-          <div class="test-toolbar">
-            <button id="applyMoodBtn" class="secondary" type="button">只应用表情</button>
-            <button id="resetFaceBtn" class="secondary" type="button">重置表情口型</button>
+            <div class="debug-block">
+              <div class="helper-label">教师位置 XYZ</div>
+              <div class="vector-grid">
+                <input id="teacherPosX" type="number" step="0.001" placeholder="x" />
+                <input id="teacherPosY" type="number" step="0.001" placeholder="y" />
+                <input id="teacherPosZ" type="number" step="0.001" placeholder="z" />
+              </div>
+              <div class="helper-label" style="margin-top: 10px;">教师朝向目标 XYZ</div>
+              <div class="vector-grid">
+                <input id="teacherTargetX" type="number" step="0.001" placeholder="target x" />
+                <input id="teacherTargetY" type="number" step="0.001" placeholder="target y" />
+                <input id="teacherTargetZ" type="number" step="0.001" placeholder="target z" />
+              </div>
+              <div class="test-toolbar" style="margin-top: 10px;">
+                <button id="applyTeacherTransformBtn" class="accent" type="button">应用教师位置</button>
+                <button id="pullTeacherTransformBtn" class="secondary" type="button">读取当前教师</button>
+              </div>
+            </div>
+
+            <div class="debug-block">
+              <div class="helper-label">背景归一化读数</div>
+              <div id="backgroundMeta" class="debug-readout">未加载背景。</div>
+            </div>
+
+            <div class="debug-block">
+              <div class="helper-label">漫游读数</div>
+              <div id="roamingMeta" class="debug-readout">相机、焦点和教师站位会实时显示在这里。</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="list-meta">
-        <span id="countText">0 个动作</span>
-        <span id="selectionText">未选中</span>
-      </div>
+        <div class="list-meta">
+          <span id="countText">0 个动作</span>
+          <span id="selectionText">未选中</span>
+        </div>
 
-      <div id="motionList" class="motion-list"></div>
+        <div id="motionList" class="motion-list"></div>
+      </div>
     </aside>
 
     <main class="panel viewer">
@@ -531,6 +616,8 @@
         <div class="overlay-card">
           <div class="overlay-text">
             快捷键：
+            <code>W/A/S/D</code> 漫游；
+            <code>Q/E</code> 升降；
             左右方向键切换动作；
             空格暂停或继续；
             <code>L</code> 切换循环。
@@ -699,9 +786,40 @@
       const speechPanel = document.getElementById('speechPanel');
       const speechText = document.getElementById('speechText');
       const speechMeta = document.getElementById('speechMeta');
+      const backgroundSelect = document.getElementById('backgroundSelect');
+      const resetCameraBtn = document.getElementById('resetCameraBtn');
+      const teacherToTargetBtn = document.getElementById('teacherToTargetBtn');
+      const teacherFaceCameraBtn = document.getElementById('teacherFaceCameraBtn');
+      const copySceneStateBtn = document.getElementById('copySceneStateBtn');
+      const teacherPosX = document.getElementById('teacherPosX');
+      const teacherPosY = document.getElementById('teacherPosY');
+      const teacherPosZ = document.getElementById('teacherPosZ');
+      const teacherTargetX = document.getElementById('teacherTargetX');
+      const teacherTargetY = document.getElementById('teacherTargetY');
+      const teacherTargetZ = document.getElementById('teacherTargetZ');
+      const applyTeacherTransformBtn = document.getElementById('applyTeacherTransformBtn');
+      const pullTeacherTransformBtn = document.getElementById('pullTeacherTransformBtn');
+      const backgroundMeta = document.getElementById('backgroundMeta');
+      const roamingMeta = document.getElementById('roamingMeta');
 
       const scene = new THREE.Scene();
       scene.background = new THREE.Color('#edf3f6');
+
+      const worldRoot = new THREE.Group();
+      worldRoot.name = 'WorldRoot';
+      scene.add(worldRoot);
+
+      const backgroundStage = new THREE.Group();
+      backgroundStage.name = 'BackgroundStage';
+      worldRoot.add(backgroundStage);
+
+      const backgroundNormalizeRoot = new THREE.Group();
+      backgroundNormalizeRoot.name = 'BackgroundNormalizeRoot';
+      backgroundStage.add(backgroundNormalizeRoot);
+
+      const teacherRig = new THREE.Group();
+      teacherRig.name = 'TeacherRig';
+      worldRoot.add(teacherRig);
 
       const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 100);
       camera.position.set(0.0, 1.45, 2.75);
@@ -738,7 +856,7 @@
       );
       floor.rotation.x = -Math.PI / 2;
       floor.position.y = -0.001;
-      scene.add(floor);
+      worldRoot.add(floor);
 
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(0.72, 0.78, 72),
@@ -746,21 +864,24 @@
       );
       ring.rotation.x = -Math.PI / 2;
       ring.position.y = 0.002;
-      scene.add(ring);
+      teacherRig.add(ring);
 
       const grid = new THREE.GridHelper(8, 16, '#b8c7d5', '#d5dfe7');
       grid.position.y = 0.0005;
       grid.material.opacity = 0.25;
       grid.material.transparent = true;
-      scene.add(grid);
+      worldRoot.add(grid);
 
 
       const dracoLoader = new DRACOLoader();
       dracoLoader.setDecoderPath('/node_modules/three/examples/jsm/libs/draco/gltf/');
 
-      const gltfLoader = new GLTFLoader();
-      gltfLoader.setDRACOLoader(dracoLoader);
-      gltfLoader.register((parser) => new VRMLoaderPlugin(parser));
+      const sceneGltfLoader = new GLTFLoader();
+      sceneGltfLoader.setDRACOLoader(dracoLoader);
+
+      const vrmLoader = new GLTFLoader();
+      vrmLoader.setDRACOLoader(dracoLoader);
+      vrmLoader.register((parser) => new VRMLoaderPlugin(parser));
 
       const fbxLoader = new FBXLoader();
       const loaderCache = new Map();
@@ -768,11 +889,27 @@
       const tempVectorB = new THREE.Vector3();
       const tempVectorC = new THREE.Vector3();
       const tempVectorD = new THREE.Vector3();
+      const tempVectorE = new THREE.Vector3();
+      const tempVectorF = new THREE.Vector3();
+      const upAxis = new THREE.Vector3(0, 1, 0);
 
       const state = {
         vrmUrl: '',
         vrm: null,
         avatarRoot: null,
+        backgrounds: [],
+        currentBackgroundPath: '',
+        currentBackgroundName: '',
+        backgroundSceneRoot: null,
+        backgroundNormalization: null,
+        backgroundPlacement: {
+          x: 0,
+          y: 0,
+          z: 0,
+          rotationY: 0,
+          scale: 1,
+        },
+        backgroundLoadToken: 0,
         mixer: null,
         currentAction: null,
         currentActionKey: '',
@@ -800,21 +937,26 @@
         voices: [],
         selectedVoiceName: '',
         defaultView: {
-          camera: { x: 0.0, y: 1.45, z: 2.75 },
-          target: { x: 0.0, y: 1.2, z: 0.0 },
+          camera: { x: 0.107, y: 1.508, z: -0.404 },
+          target: { x: 2.866, y: 1.396, z: -0.369 },
           fov: 62,
         },
-        teacherPose: { x: 0, y: 0, z: 0 },
+        teacherPose: { x: 1.384, y: 0.555, z: -0.352 },
         teacherFacingStudentsView: {
-          camera: { x: 0, y: 1.45, z: 2.75 },
-          target: { x: 0, y: 1.2, z: 0 },
-          fov: 35,
+          camera: { x: 1.21, y: 1.231, z: -0.364 },
+          target: { x: -1.057, y: 1.426, z: -0.358 },
+          fov: 62,
         },
+        roamingKeys: new Set(),
+        debugPanelTimer: 0,
         searchSuggestions: [],
         searchSuggestionIndex: -1,
       };
 
       const MAX_SEARCH_SUGGESTIONS = 8;
+      const ROAM_KEY_SET = new Set(['w', 'a', 's', 'd', 'q', 'e']);
+      const CAMERA_ROAM_SPEED = 1.7;
+      const CAMERA_VERTICAL_SPEED = 1.5;
 
       function setStatus(kind, text) {
         statusText.textContent = text;
@@ -915,7 +1057,325 @@
         return `x ${vec.x.toFixed(3)}, y ${vec.y.toFixed(3)}, z ${vec.z.toFixed(3)}`;
       }
 
-      // 读取教师 VRM 当前的脚底世界坐标（站立时双脚中心 + 最低着地点的 Y）
+      function roundValue(value, digits = 3) {
+        return Number(value.toFixed(digits));
+      }
+
+      function serializeVec3(vec, digits = 3) {
+        return {
+          x: roundValue(vec.x, digits),
+          y: roundValue(vec.y, digits),
+          z: roundValue(vec.z, digits),
+        };
+      }
+
+      function buildCameraSnapshot() {
+        return {
+          camera: serializeVec3(camera.position),
+          target: serializeVec3(controls.target),
+          fov: roundValue(camera.fov, 1),
+        };
+      }
+
+      function buildTeacherSnapshot() {
+        const teacher = getTeacherPosition({ x: 0, y: 0, z: 0 });
+        return {
+          teacherPose: serializeVec3(teacher),
+          facingTarget: serializeVec3(state.teacherFacingStudentsView.target),
+        };
+      }
+
+      function buildBackgroundSnapshot() {
+        if (!state.backgroundSceneRoot || !state.backgroundNormalization) return null;
+
+        return {
+          background: state.currentBackgroundName || state.currentBackgroundPath,
+          placement: {
+            position: serializeVec3(backgroundStage.position),
+            rotationY: roundValue(backgroundStage.rotation.y, 3),
+            scale: roundValue(backgroundStage.scale.x, 3),
+          },
+          normalization: state.backgroundNormalization,
+        };
+      }
+
+      function buildSceneSnapshot() {
+        return {
+          ...buildCameraSnapshot(),
+          ...buildTeacherSnapshot(),
+          background: buildBackgroundSnapshot(),
+        };
+      }
+
+      function setNumericInputValue(input, value) {
+        input.value = Number.isFinite(value) ? value.toFixed(3) : '';
+      }
+
+      function syncInputIfNotFocused(input, value) {
+        if (document.activeElement === input) return;
+        setNumericInputValue(input, value);
+      }
+
+      function syncTeacherEditorFromState() {
+        syncInputIfNotFocused(teacherPosX, state.teacherPose.x);
+        syncInputIfNotFocused(teacherPosY, state.teacherPose.y);
+        syncInputIfNotFocused(teacherPosZ, state.teacherPose.z);
+        syncInputIfNotFocused(teacherTargetX, state.teacherFacingStudentsView.target.x);
+        syncInputIfNotFocused(teacherTargetY, state.teacherFacingStudentsView.target.y);
+        syncInputIfNotFocused(teacherTargetZ, state.teacherFacingStudentsView.target.z);
+      }
+
+      function syncTeacherStateFromScene() {
+        const teacher = getTeacherPosition({ x: 0, y: 0, z: 0 });
+        state.teacherPose.x = teacher.x;
+        state.teacherPose.y = teacher.y;
+        state.teacherPose.z = teacher.z;
+      }
+
+      function parseNumericInput(input, fallback) {
+        const value = Number(input.value);
+        return Number.isFinite(value) ? value : fallback;
+      }
+
+      function applyTeacherEditorToState() {
+        state.teacherPose.x = parseNumericInput(teacherPosX, state.teacherPose.x);
+        state.teacherPose.y = parseNumericInput(teacherPosY, state.teacherPose.y);
+        state.teacherPose.z = parseNumericInput(teacherPosZ, state.teacherPose.z);
+        state.teacherFacingStudentsView.target.x = parseNumericInput(teacherTargetX, state.teacherFacingStudentsView.target.x);
+        state.teacherFacingStudentsView.target.y = parseNumericInput(teacherTargetY, state.teacherFacingStudentsView.target.y);
+        state.teacherFacingStudentsView.target.z = parseNumericInput(teacherTargetZ, state.teacherFacingStudentsView.target.z);
+      }
+
+      async function copyTextToClipboard(text) {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return copied;
+      }
+
+      function disposeMaterial(material) {
+        if (!material) return;
+        for (const value of Object.values(material)) {
+          if (value && typeof value === 'object' && value.isTexture) {
+            value.dispose?.();
+          }
+        }
+        material.dispose?.();
+      }
+
+      function disposeObject3D(root) {
+        if (!root) return;
+        root.traverse((node) => {
+          node.geometry?.dispose?.();
+          if (Array.isArray(node.material)) {
+            for (const material of node.material) disposeMaterial(material);
+          } else {
+            disposeMaterial(node.material);
+          }
+        });
+      }
+
+      function tuneBackgroundRendering(root) {
+        if (!root) return;
+
+        root.traverse((node) => {
+          node.frustumCulled = false;
+
+          if (!node.material) return;
+
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          for (const material of materials) {
+            if (!material) continue;
+
+            material.side = THREE.DoubleSide;
+            material.shadowSide = THREE.DoubleSide;
+
+            if (material.transparent) {
+              material.depthWrite = false;
+              material.alphaTest = Math.max(material.alphaTest || 0, 0.02);
+            }
+
+            material.needsUpdate = true;
+          }
+
+          if (node.isMesh) {
+            node.renderOrder = 1;
+          }
+        });
+      }
+
+      function tuneVRMRendering(vrm) {
+        if (!vrm?.scene) return;
+
+        vrm.scene.traverse((node) => {
+          if (!node.isSkinnedMesh && !node.isMesh) return;
+
+          node.frustumCulled = false;
+
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          for (const material of materials) {
+            if (!material) continue;
+
+            const materialName = String(material.name || '').toLowerCase();
+            const isTransparentFaceOverlay =
+              material.transparent &&
+              (
+                materialName.includes('eye') ||
+                materialName.includes('highlight') ||
+                materialName.includes('eyeline') ||
+                materialName.includes('iris') ||
+                materialName.includes('lash') ||
+                materialName.includes('brow')
+              );
+            const isMaskedMouthOverlay =
+              !material.transparent &&
+              (
+                materialName.includes('facemouth') ||
+                materialName.includes('mouth')
+              );
+            const isFaceOverlay = isTransparentFaceOverlay || isMaskedMouthOverlay;
+
+            if (material.transparent) {
+              material.depthWrite = false;
+            }
+
+            if (isFaceOverlay) {
+              material.side = THREE.DoubleSide;
+              material.shadowSide = THREE.DoubleSide;
+              if (material.transparent) {
+                material.depthWrite = false;
+              } else {
+                material.alphaTest = Math.max(material.alphaTest || 0, 0.01);
+              }
+              node.renderOrder = Math.max(node.renderOrder || 0, 10);
+            }
+
+            material.needsUpdate = true;
+          }
+        });
+      }
+
+      function applyBackgroundPlacement() {
+        backgroundStage.position.set(
+          state.backgroundPlacement.x,
+          state.backgroundPlacement.y,
+          state.backgroundPlacement.z
+        );
+        backgroundStage.rotation.set(0, state.backgroundPlacement.rotationY, 0);
+        backgroundStage.scale.setScalar(state.backgroundPlacement.scale);
+        backgroundStage.updateMatrixWorld(true);
+      }
+
+      function updateReferenceHelpers() {
+        floor.visible = !state.backgroundSceneRoot;
+        grid.visible = true;
+        ring.visible = true;
+      }
+
+      function updateDebugReadouts() {
+        const cameraState = buildCameraSnapshot();
+        const teacherState = buildTeacherSnapshot();
+        const backgroundState = buildBackgroundSnapshot();
+
+        if (backgroundState) {
+          backgroundMeta.textContent = [
+            `背景: ${backgroundState.background}`,
+            `原始 bboxMin: ${formatVec3(backgroundState.normalization.bboxMin)}`,
+            `原始 bboxMax: ${formatVec3(backgroundState.normalization.bboxMax)}`,
+            `尺寸: ${formatVec3(backgroundState.normalization.size)}`,
+            `原始中心: ${formatVec3(backgroundState.normalization.center)}`,
+            `归一化偏移: ${formatVec3(backgroundState.normalization.offset)}`,
+            `世界放置: ${formatVec3(backgroundState.placement.position)} | ry ${backgroundState.placement.rotationY.toFixed(3)} | s ${backgroundState.placement.scale.toFixed(3)}`,
+          ].join('\n');
+        } else {
+          backgroundMeta.textContent = '未加载背景，当前只显示辅助地台与网格。';
+        }
+
+        roamingMeta.textContent = [
+          `相机: ${formatVec3(cameraState.camera)} | fov ${cameraState.fov.toFixed(1)}`,
+          `焦点: ${formatVec3(cameraState.target)}`,
+          `教师脚底: ${formatVec3(teacherState.teacherPose)}`,
+          `教师朝向目标: ${formatVec3(teacherState.facingTarget)}`,
+        ].join('\n');
+      }
+
+      function clearBackgroundScene() {
+        if (state.backgroundSceneRoot) {
+          backgroundNormalizeRoot.remove(state.backgroundSceneRoot);
+          disposeObject3D(state.backgroundSceneRoot);
+        }
+
+        state.backgroundSceneRoot = null;
+        state.currentBackgroundPath = '';
+        state.currentBackgroundName = '';
+        state.backgroundNormalization = null;
+        backgroundNormalizeRoot.position.set(0, 0, 0);
+        backgroundNormalizeRoot.rotation.set(0, 0, 0);
+        backgroundNormalizeRoot.scale.set(1, 1, 1);
+        applyBackgroundPlacement();
+        updateReferenceHelpers();
+      }
+
+      async function loadBackgroundByPath(backgroundPath) {
+        const token = ++state.backgroundLoadToken;
+        const selected = state.backgrounds.find((item) => item.path === backgroundPath) || null;
+
+        if (!backgroundPath) {
+          clearBackgroundScene();
+          updateDebugReadouts();
+          setStatus('ok', '已切换到无背景模式');
+          return;
+        }
+
+        setStatus('', `正在加载背景: ${selected?.fileName || backgroundPath}`);
+        const gltf = await sceneGltfLoader.loadAsync(backgroundPath);
+        if (token !== state.backgroundLoadToken) {
+          disposeObject3D(gltf.scene);
+          return;
+        }
+
+        clearBackgroundScene();
+        state.backgroundSceneRoot = gltf.scene;
+        state.currentBackgroundPath = backgroundPath;
+        state.currentBackgroundName = selected?.name || gltf.scene.name || 'background';
+        tuneBackgroundRendering(state.backgroundSceneRoot);
+
+        backgroundNormalizeRoot.add(state.backgroundSceneRoot);
+        state.backgroundSceneRoot.updateMatrixWorld(true);
+
+        const box = new THREE.Box3().setFromObject(state.backgroundSceneRoot);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const offset = new THREE.Vector3(-center.x, -box.min.y, -center.z);
+
+        backgroundNormalizeRoot.position.copy(offset);
+        applyBackgroundPlacement();
+        backgroundNormalizeRoot.updateMatrixWorld(true);
+
+        state.backgroundNormalization = {
+          bboxMin: serializeVec3(box.min),
+          bboxMax: serializeVec3(box.max),
+          size: serializeVec3(size),
+          center: serializeVec3(center),
+          offset: serializeVec3(offset),
+        };
+
+        updateReferenceHelpers();
+        updateDebugReadouts();
+        setStatus('ok', `背景已加载: ${selected?.fileName || state.currentBackgroundName}`);
+      }
+
       function getAvatarFeetWorldPosition(out) {
         const vrm = state.vrm;
         const result = out || { x: 0, y: 0, z: 0 };
@@ -944,34 +1404,49 @@
         return result;
       }
 
-      function getTeacherPosition() {
-        if (!state.avatarRoot) return { x: 0, y: 0, z: 0 };
+      function getTeacherPosition(out) {
+        const result = out || { x: 0, y: 0, z: 0 };
+        if (!state.avatarRoot) {
+          const rigWorld = teacherRig.getWorldPosition(tempVectorE);
+          result.x = rigWorld.x;
+          result.y = rigWorld.y;
+          result.z = rigWorld.z;
+          return result;
+        }
         return getAvatarFeetWorldPosition();
       }
 
       function applyTeacherPose(targetRoot = state.avatarRoot) {
-        if (!targetRoot) return;
-
-        // 1) 先设置朝向（在 XZ 平面上面朝 facingTarget）
         const facingTarget = state.teacherFacingStudentsView.target;
+        teacherRig.position.set(state.teacherPose.x, state.teacherPose.y, state.teacherPose.z);
+
         const dx = facingTarget.x - state.teacherPose.x;
         const dz = facingTarget.z - state.teacherPose.z;
         if (Math.abs(dx) > 1e-6 || Math.abs(dz) > 1e-6) {
-          targetRoot.rotation.y = Math.atan2(dx, dz);
+          teacherRig.rotation.y = Math.atan2(dx, dz);
+        }
+        teacherRig.updateMatrixWorld(true);
+
+        if (!targetRoot) {
+          syncTeacherStateFromScene();
+          syncTeacherEditorFromState();
+          updateDebugReadouts();
+          return;
         }
 
-        // 2) 自校正放置：先把根放到目标位置，读取真实脚底，再用偏差修正一次。
-        //    这样不依赖任何预先测量的 offset，建筑模型的世界坐标系就是唯一基准。
-        targetRoot.position.set(state.teacherPose.x, state.teacherPose.y, state.teacherPose.z);
+        // TeacherRig 负责世界坐标；AvatarRoot 只负责把 VRM 的真实脚底对齐到 Rig 原点。
+        targetRoot.position.set(0, 0, 0);
         targetRoot.updateMatrixWorld(true);
 
         if (state.vrm) {
-          const feet = getAvatarFeetWorldPosition(tempVectorA);
-          targetRoot.position.x += state.teacherPose.x - feet.x;
-          targetRoot.position.y += state.teacherPose.y - feet.y;
-          targetRoot.position.z += state.teacherPose.z - feet.z;
-          targetRoot.updateMatrixWorld(true);
+          const feetWorld = getAvatarFeetWorldPosition(tempVectorA);
+          const feetLocalToRig = teacherRig.worldToLocal(tempVectorE.copy(feetWorld));
+          targetRoot.position.set(-feetLocalToRig.x, -feetLocalToRig.y, -feetLocalToRig.z);
         }
+        teacherRig.updateMatrixWorld(true);
+        syncTeacherStateFromScene();
+        syncTeacherEditorFromState();
+        updateDebugReadouts();
       }
 
       function setCameraFov(nextFov) {
@@ -984,6 +1459,57 @@
         controls.target.set(targetPose.x, targetPose.y, targetPose.z);
         setCameraFov(nextFov);
         controls.update();
+        updateDebugReadouts();
+      }
+
+      function translateCameraAndTarget(offset, syncReadout = true) {
+        camera.position.add(offset);
+        controls.target.add(offset);
+        controls.update();
+        if (syncReadout) {
+          updateDebugReadouts();
+        }
+      }
+
+      function moveCameraVertically(deltaY) {
+        tempVectorF.set(0, deltaY, 0);
+        translateCameraAndTarget(tempVectorF);
+      }
+
+      function updateCameraRoaming(delta) {
+        const forwardIntent = (state.roamingKeys.has('w') ? 1 : 0) - (state.roamingKeys.has('s') ? 1 : 0);
+        const strafeIntent = (state.roamingKeys.has('d') ? 1 : 0) - (state.roamingKeys.has('a') ? 1 : 0);
+        const verticalIntent = (state.roamingKeys.has('q') ? 1 : 0) - (state.roamingKeys.has('e') ? 1 : 0);
+
+        if (!forwardIntent && !strafeIntent && !verticalIntent) return;
+
+        tempVectorF.set(0, 0, 0);
+
+        if (forwardIntent || strafeIntent) {
+          camera.getWorldDirection(tempVectorA);
+          tempVectorA.y = 0;
+          if (tempVectorA.lengthSq() <= 1e-8) {
+            tempVectorA.set(0, 0, -1);
+          } else {
+            tempVectorA.normalize();
+          }
+
+          tempVectorB.crossVectors(tempVectorA, upAxis).normalize();
+          tempVectorF.addScaledVector(tempVectorA, forwardIntent);
+          tempVectorF.addScaledVector(tempVectorB, strafeIntent);
+
+          if (tempVectorF.lengthSq() > 1e-8) {
+            tempVectorF.normalize().multiplyScalar(delta * CAMERA_ROAM_SPEED);
+          }
+        }
+
+        if (verticalIntent) {
+          tempVectorF.y += verticalIntent * delta * CAMERA_VERTICAL_SPEED;
+        }
+
+        if (tempVectorF.lengthSq() > 1e-8) {
+          translateCameraAndTarget(tempVectorF, false);
+        }
       }
 
       function normalizeMixamoNodeName(name) {
@@ -1612,15 +2138,19 @@
       }
 
       async function loadVRM(vrmUrl) {
-        const gltf = await gltfLoader.loadAsync(vrmUrl);
+        const gltf = await vrmLoader.loadAsync(vrmUrl);
         const vrm = gltf.userData.vrm;
+        // VRM 0.x 默认朝 -Z，rotateVRM0 会把它统一到 +Z（和 VRM 1.0 一致）。
+        // 之后 teacherRig 用 atan2(dx, dz) 让本地 +Z 指向 target，因此这里不要再额外加 Math.PI，
+        // 否则模型会被翻过去，呈现"背对相机/镜像"的效果。
         VRMUtils.rotateVRM0(vrm);
-        vrm.scene.rotation.y = Math.PI;
+        tuneVRMRendering(vrm);
 
         const avatarRoot = new THREE.Group();
         avatarRoot.name = 'AvatarRoot';
         avatarRoot.add(vrm.scene);
-        scene.add(avatarRoot);
+        teacherRig.add(avatarRoot);
+        teacherRig.updateMatrixWorld(true);
         avatarRoot.updateMatrixWorld(true);
         anchorAvatarToFeetCenter(vrm, avatarRoot);
         applyTeacherPose(avatarRoot);
@@ -1868,6 +2398,10 @@
           state.currentActionKey = motion.path;
           applyPlaybackState();
           action.play();
+          state.mixer.update(0);
+          state.vrm?.update(0);
+          state.vrm?.scene.updateMatrixWorld(true);
+          applyTeacherPose();
 
           setStatus('ok', `当前动作: ${motion.fileName}`);
           currentTitle.textContent = motion.name;
@@ -1922,6 +2456,17 @@
         }
       }
 
+      function populateBackgroundSelect() {
+        backgroundSelect.innerHTML = '<option value="">无背景（仅辅助地台）</option>';
+        for (const background of state.backgrounds) {
+          const option = document.createElement('option');
+          option.value = background.path;
+          option.textContent = `${background.name} · ${background.fileName}`;
+          backgroundSelect.appendChild(option);
+        }
+        backgroundSelect.disabled = state.backgrounds.length === 0;
+      }
+
       async function init() {
         resizeRenderer();
         setStatus('', '正在读取动作列表');
@@ -1930,6 +2475,7 @@
         const payload = await response.json();
         state.motionList = payload.motions;
         state.vrmUrl = payload.vrm;
+        state.backgrounds = payload.backgrounds || [];
 
         const groups = [...new Set(state.motionList.map((item) => item.group))];
         for (const group of groups) {
@@ -1939,14 +2485,28 @@
           groupSelect.appendChild(option);
         }
 
+        populateBackgroundSelect();
         populateActionSelect();
         filterMotions();
-        // 已移除摄影棚背景场景，仅保留圆形底座/网格
+        updateReferenceHelpers();
+        updateDebugReadouts();
+
+        if (state.backgrounds.length) {
+          backgroundSelect.value = state.backgrounds[0].path;
+          try {
+            await loadBackgroundByPath(backgroundSelect.value);
+          } catch (error) {
+            console.error(error);
+            backgroundMeta.textContent = `背景加载失败：${error?.message || String(error)}`;
+            setStatus('bad', '背景加载失败，已回退到无背景模式');
+          }
+        }
 
         setStatus('', '正在加载 VRM 模型');
         const loadedAvatar = await loadVRM(state.vrmUrl);
         state.vrm = loadedAvatar.vrm;
         state.avatarRoot = loadedAvatar.avatarRoot;
+        applyTeacherPose(state.avatarRoot);
 
         const maps = buildExpressionMaps(state.vrm);
         state.expressionMap = maps.expressionMap;
@@ -1959,14 +2519,18 @@
         setCameraPose(state.defaultView.camera, state.defaultView.target, state.defaultView.fov);
 
         currentTitle.textContent = 'VRM 已加载';
-        currentMeta.textContent = `动作总数 ${state.motionList.length}，可以直接测试动作、表情和前端口型。`;
+        currentMeta.textContent = `动作总数 ${state.motionList.length}${state.currentBackgroundName ? ` · 背景 ${state.currentBackgroundName}` : ''}，可以直接测试动作、表情和前端口型。`;
         setStatus('ok', `VRM 已加载，共 ${state.motionList.length} 个动作`);
         speechText.textContent = '';
         speechMeta.textContent = `已识别口型通道：${getAvailableMouthSummary()}${state.selectedVoiceName ? ` · 语音：${state.selectedVoiceName}` : ' · 语音：浏览器未就绪或不可用'}`;
         speechPanel.classList.remove('hidden');
+        syncTeacherStateFromScene();
+        syncTeacherEditorFromState();
+        updateDebugReadouts();
 
         if (state.filteredList.length) {
           await playMotionByIndex(0);
+          applyTeacherPose();
         }
       }
 
@@ -2005,9 +2569,56 @@
         }
       });
       groupSelect.addEventListener('change', filterMotions);
+      backgroundSelect.addEventListener('change', async () => {
+        try {
+          await loadBackgroundByPath(backgroundSelect.value);
+        } catch (error) {
+          console.error(error);
+          backgroundMeta.textContent = `背景加载失败：${error?.message || String(error)}`;
+          setStatus('bad', '背景切换失败');
+        }
+      });
       speedSelect.addEventListener('change', () => {
         state.speed = Number(speedSelect.value);
         applyPlaybackState();
+      });
+      resetCameraBtn.addEventListener('click', () => {
+        setCameraPose(state.defaultView.camera, state.defaultView.target, state.defaultView.fov);
+        setStatus('ok', '镜头已重置到默认取景');
+      });
+      teacherToTargetBtn.addEventListener('click', () => {
+        state.teacherPose.x = controls.target.x;
+        state.teacherPose.y = 0;
+        state.teacherPose.z = controls.target.z;
+        applyTeacherPose();
+        setStatus('ok', '教师已吸附到当前焦点位置');
+      });
+      teacherFaceCameraBtn.addEventListener('click', () => {
+        state.teacherFacingStudentsView.target.x = camera.position.x;
+        state.teacherFacingStudentsView.target.y = state.teacherPose.y + 1.2;
+        state.teacherFacingStudentsView.target.z = camera.position.z;
+        applyTeacherPose();
+        setStatus('ok', '教师朝向已对齐到当前镜头');
+      });
+      applyTeacherTransformBtn.addEventListener('click', () => {
+        applyTeacherEditorToState();
+        applyTeacherPose();
+        setStatus('ok', '教师位置与朝向已应用');
+      });
+      pullTeacherTransformBtn.addEventListener('click', () => {
+        syncTeacherStateFromScene();
+        syncTeacherEditorFromState();
+        setStatus('ok', '已读取当前教师脚底位置');
+      });
+      copySceneStateBtn.addEventListener('click', async () => {
+        const sceneSnapshot = JSON.stringify(buildSceneSnapshot(), null, 2);
+        try {
+          await copyTextToClipboard(sceneSnapshot);
+          setStatus('ok', '场景参数已复制到剪贴板');
+        } catch (error) {
+          console.error(error);
+          setStatus('bad', '复制场景参数失败');
+        }
       });
       loopBtn.addEventListener('click', () => {
         state.loop = !state.loop;
@@ -2063,6 +2674,14 @@
         await speakText(text);
       });
 
+      window.addEventListener('keyup', (event) => {
+        state.roamingKeys.delete(event.key.toLowerCase());
+      });
+
+      window.addEventListener('blur', () => {
+        state.roamingKeys.clear();
+      });
+
       window.addEventListener('keydown', (event) => {
         const active = document.activeElement;
         if (
@@ -2073,7 +2692,11 @@
           return;
         }
 
-        if (event.key === 'ArrowLeft') {
+        const key = event.key.toLowerCase();
+        if (ROAM_KEY_SET.has(key)) {
+          event.preventDefault();
+          state.roamingKeys.add(key);
+        } else if (event.key === 'ArrowLeft') {
           event.preventDefault();
           moveSelection(-1);
         } else if (event.key === 'ArrowRight') {
@@ -2083,7 +2706,7 @@
           event.preventDefault();
           state.paused = !state.paused;
           applyPlaybackState();
-        } else if (event.key.toLowerCase() === 'l') {
+        } else if (key === 'l') {
           event.preventDefault();
           state.loop = !state.loop;
           applyPlaybackState();
@@ -2102,9 +2725,15 @@
         clock.update();
         const delta = clock.getDelta();
         controls.update();
+        updateCameraRoaming(delta);
         state.mixer?.update(delta);
         updateSpeechMotion(delta);
         state.vrm?.update(delta);
+        state.debugPanelTimer += delta;
+        if (state.debugPanelTimer >= 0.12) {
+          state.debugPanelTimer = 0;
+          updateDebugReadouts();
+        }
         renderer.render(scene, camera);
       });
 
